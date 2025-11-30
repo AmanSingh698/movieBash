@@ -4,7 +4,17 @@ const cors = require("cors");
 const dbService = require("./services/dbService");
 const authRoutes = require("./routes/authRoutes");
 
-app.use(cors());
+const cookieParser = require("cookie-parser");
+
+app.use(
+  cors({
+    origin: "http://localhost:5173", // your frontend
+    credentials: true, // allow cookies/auth headers
+  })
+);
+
+app.use(cookieParser());
+
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 

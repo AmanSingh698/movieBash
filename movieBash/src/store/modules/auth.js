@@ -30,7 +30,21 @@ const actions = {
     commit('SET_USER', user)
   },
 
-  logout({ commit }) {
+  async logout({ commit }) {
+    try {
+      // Call backend to revoke refresh token
+      const axios = require('axios').default
+      await axios.post(
+        'http://localhost:3000/api/auth/logout',
+        {},
+        {
+          withCredentials: true,
+        },
+      )
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Continue with local logout even if backend call fails
+    }
     commit('CLEAR_AUTH')
   },
 
@@ -40,6 +54,23 @@ const actions = {
 
   setUser({ commit }, user) {
     commit('SET_USER', user)
+  },
+
+  async refreshToken({ commit }) {
+    try {
+      const axios = require('axios').default
+      const response = await axios.post(
+        'http://localhost:3000/api/auth/refresh',
+        {},
+        { withCredentials: true },
+      )
+      const newToken = response.data.accessToken
+      commit('SET_TOKEN', newToken)
+      return newToken
+    } catch (error) {
+      commit('CLEAR_AUTH')
+      throw error
+    }
   },
 }
 
