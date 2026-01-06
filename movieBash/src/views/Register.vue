@@ -2,14 +2,7 @@
   <div class="auth-modal-overlay" @click.self="handleClose">
     <div class="auth-modal-content animate-scale-in">
       <button class="auth-close-btn" @click="handleClose">
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -23,64 +16,31 @@
       <form @submit.prevent="handleSubmit" class="auth-form">
         <div class="form-group">
           <label for="name" class="form-label">Full Name</label>
-          <input
-            type="text"
-            id="name"
-            v-model="formData.name"
-            class="form-input"
-            placeholder="Enter your full name"
-            required
-          />
+          <input type="text" id="name" v-model="formData.name" class="form-input" placeholder="Enter your full name"
+            required />
         </div>
 
         <div class="form-group">
           <label for="email" class="form-label">Email Address</label>
-          <input
-            type="email"
-            id="email"
-            v-model="formData.email"
-            class="form-input"
-            placeholder="Enter your email"
-            required
-          />
+          <input type="email" id="email" v-model="formData.email" class="form-input" placeholder="Enter your email"
+            required />
         </div>
 
         <div class="form-group">
           <label for="password" class="form-label">Password</label>
           <div class="password-input-wrapper">
-            <input
-              :type="showPassword ? 'text' : 'password'"
-              id="password"
-              v-model="formData.password"
-              class="form-input"
-              placeholder="Enter your password"
-              required
-            />
+            <input :type="showPassword ? 'text' : 'password'" id="password" v-model="formData.password"
+              class="form-input" placeholder="Enter your password" required />
             <button type="button" class="toggle-password" @click="showPassword = !showPassword">
-              <svg
-                v-if="!showPassword"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg v-if="!showPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
-              <svg
-                v-else
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path
-                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
-                ></path>
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                </path>
                 <line x1="1" y1="1" x2="23" y2="23"></line>
               </svg>
             </button>
@@ -89,25 +49,12 @@
 
         <div class="form-group">
           <label for="confirmPassword" class="form-label">Confirm Password</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            v-model="formData.confirmPassword"
-            class="form-input"
-            placeholder="Confirm your password"
-            required
-          />
+          <input type="password" id="confirmPassword" v-model="formData.confirmPassword" class="form-input"
+            placeholder="Confirm your password" required />
         </div>
 
         <button type="submit" class="btn btn-primary btn-lg submit-btn">Create Account</button>
 
-        <div
-          v-if="serverMessage"
-          :class="['alert', serverType === 'error' ? 'alert-error' : 'alert-success']"
-          role="alert"
-        >
-          {{ serverMessage }}
-        </div>
       </form>
 
       <div class="auth-divider">
@@ -115,24 +62,20 @@
       </div>
 
       <div class="social-login">
-        <button class="social-btn">
+        <button class="social-btn" @click="handleGoogleLogin" type="button">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              fill="#4285F4"
-            />
+              fill="#4285F4" />
             <path
               d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              fill="#34A853"
-            />
+              fill="#34A853" />
             <path
               d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              fill="#FBBC05"
-            />
+              fill="#FBBC05" />
             <path
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              fill="#EA4335"
-            />
+              fill="#EA4335" />
           </svg>
           Google
         </button>
@@ -140,8 +83,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path
               d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
-              fill="#1877F2"
-            />
+              fill="#1877F2" />
           </svg>
           Facebook
         </button>
@@ -161,8 +103,13 @@
 import { ref, reactive } from 'vue'
 import api from '@/utils/axiosConfig'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/modules/auth'
+import { googleAuthCodeLogin } from "vue3-google-login"
+import { useToast } from "vue-toastification";
 
 const router = useRouter()
+
+const toast = useToast();
 
 const showPassword = ref(false)
 
@@ -173,28 +120,13 @@ const formData = reactive({
   confirmPassword: '',
 })
 
-const serverMessage = ref('')
-const serverType = ref('error')
-
-function showMessage(text, type = 'error', autoClear = true, ms = 4000) {
-  serverMessage.value = text
-  serverType.value = type
-  if (autoClear) {
-    setTimeout(() => {
-      serverMessage.value = ''
-    }, ms)
-  }
-}
-
 const handleClose = () => {
   router.push('/')
 }
 
 const handleSubmit = async () => {
-  serverMessage.value = ''
-
   if (formData.password !== formData.confirmPassword) {
-    showMessage('Passwords do not match!', 'error')
+    toast.error('Passwords do not match!');
     return
   }
 
@@ -208,11 +140,18 @@ const handleSubmit = async () => {
     const response = await api.post('/auth/register', payload)
 
     if (response.data?.message && !response.data?.success) {
-      showMessage(response.data.message, 'error')
+      toast.error(response.data.message);
       return
     }
 
-    showMessage('Account created successfully! Redirecting to login...', 'success', true, 2000)
+    toast.success('Account created successfully! Redirecting...');
+
+    if (response.data.accessToken) {
+      authStore.setAccessToken(response.data.accessToken)
+    }
+    if (response.data.user) {
+      authStore.setUser(response.data.user)
+    }
 
     formData.name = ''
     formData.email = ''
@@ -220,13 +159,39 @@ const handleSubmit = async () => {
     formData.confirmPassword = ''
 
     setTimeout(() => {
-      router.push('/login')
-    }, 2000)
+      router.push('/')
+    }, 1500)
   } catch (err) {
     const msg =
       err.response?.data?.message || err.response?.data?.error || err.message || 'Signup failed'
-    showMessage(msg, 'error')
+    toast.error(msg);
     console.error('Signup error:', err)
+  }
+}
+const handleGoogleLogin = async () => {
+  try {
+    const response = await googleAuthCodeLogin()
+    if (response.code) {
+      const serverResponse = await api.post('/auth/google', {
+        code: response.code
+      })
+
+      if (serverResponse.data.accessToken) {
+        authStore.setAccessToken(serverResponse.data.accessToken)
+      }
+      if (serverResponse.data.user) {
+        authStore.setUser(serverResponse.data.user)
+      }
+
+      toast.success('Registration successful');
+
+      setTimeout(() => {
+        router.push('/')
+      }, 1500)
+    }
+  } catch (error) {
+    console.error('Google Login Error:', error)
+    toast.error('Google Login failed');
   }
 }
 </script>
@@ -315,6 +280,8 @@ const handleSubmit = async () => {
 }
 
 .form-input {
+  width: 100%;
+  box-sizing: border-box;
   padding: var(--spacing-md);
   background: var(--color-bg-tertiary);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -332,6 +299,11 @@ const handleSubmit = async () => {
 
 .password-input-wrapper {
   position: relative;
+  width: 100%;
+}
+
+.password-input-wrapper .form-input {
+  padding-right: 3rem;
 }
 
 .toggle-password {

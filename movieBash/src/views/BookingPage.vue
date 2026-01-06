@@ -18,14 +18,15 @@
 
                     <div class="movie-info-bar glass">
                         <div class="movie-info-content">
-                            <img :src="bookingSummary.movie.poster" :alt="bookingSummary.movie.title"
-                                class="movie-poster-small" />
+                            <img :src="bookingSummary.movie.poster_url || bookingSummary.movie.poster"
+                                :alt="bookingSummary.movie.title" class="movie-poster-small" />
                             <div class="movie-details-small">
                                 <h3>{{ bookingSummary.movie.title }}</h3>
                                 <p>{{ bookingSummary.theater?.name }}</p>
+                                <!-- {{ bookingSummary }} -->
                                 <p class="showtime-info">
                                     {{ bookingSummary.showtime?.time }} • {{
-                                        formatDate(bookingSummary.movie.releaseDate) }}
+                                        formatShowDate(bookingSummary.showtime?.start_time) }}
                                 </p>
                             </div>
                         </div>
@@ -58,7 +59,7 @@
                             <h4 class="summary-subtitle">Selected Seats</h4>
                             <div class="selected-seats-list">
                                 <span v-for="seat in bookingSummary.seats" :key="seat.id" class="seat-tag">
-                                    {{ seat.id }}
+                                    {{ seat.seat_label }}
                                 </span>
                             </div>
                         </div>
@@ -101,18 +102,23 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
-import { useStore } from 'vuex'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import SeatSelector from '@/components/SeatSelector.vue'
+import { useBookingStore } from '@/store/modules/booking'
+import { useAuthStore } from '@/store/modules/auth'
 
-const store = useStore()
+const bookingStore = useBookingStore()
+const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-const bookingSummary = computed(() => store.getters['booking/bookingSummary'])
+const isInitialized = ref(false)
+const bookingSummary = computed(() => bookingStore.bookingSummary)
 
 const goBack = () => {
+    // Release all seats before going back
+    bookingStore.releaseAllSeats()
     router.back()
 }
 
@@ -121,22 +127,106 @@ const formatDate = (dateString) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-const proceedToPayment = () => {
-    // In real app, this would navigate to payment page
-    alert(`Proceeding to payment for ${bookingSummary.value.seatsCount} tickets. Total: ₹${bookingSummary.value.totalPrice}`)
-
-    // For demo, we'll just confirm the booking
-    store.dispatch('booking/confirmBooking').then((result) => {
-        if (result.success) {
-            alert(`Booking confirmed! Booking ID: ${result.bookingId}`)
-            router.push('/')
-        }
-    })
+const formatShowDate = (dateString) => {
+    if (!dateString) return 'Date not available'
+    const date = new Date(dateString)
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+        return 'Date not available'
+    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-onMounted(() => {
-    if (!bookingSummary.value.movie) {
+const proceedToPayment = async () => {
+    try {
+        if (bookingSummary.value.seatsCount === 0) {
+            alert('Please select at least one seat')
+            return
+        }
+
+
+        // Import Razorpay utility
+        const { initializeRazorpay } = await import('@/utils/razorpay')
+
+        // Prepare booking details for backend
+        const bookingDetails = {
+            showId: bookingSummary.value.showtime.id,
+            seatIds: bookingStore.selectedSeatIds,
+            sessionId: bookingStore.sessionId,
+            totalAmount: bookingSummary.value.totalPrice,
+            theatreId: bookingSummary.value.theater.id
+        }
+
+        // Initialize Razorpay payment (backend handles order creation & verification)
+        await initializeRazorpay({
+            amount: bookingSummary.value.totalPrice,
+            bookingDetails,
+            description: `${bookingSummary.value.movie.title} - ${bookingSummary.value.seatsCount} tickets`,
+            prefill: {
+                name: authStore.getUser?.name || '',
+                email: authStore.getUser?.email || '',
+                phone: authStore.getUser?.phone || '',
+            },
+            onSuccess: (paymentData) => {
+                // Payment verified and booking confirmed by backend
+                router.push({
+                    name: 'booking-confirmation',
+                    query: {
+                        status: 'success',
+                        bookingId: paymentData.bookingId,
+                        paymentId: paymentData.paymentId,
+                        amount: bookingSummary.value.totalPrice,
+                        movie: bookingSummary.value.movie.title,
+                        theater: bookingSummary.value.theater.name,
+                        time: bookingSummary.value.showtime.start_time,
+                        seats: bookingStore.selectedSeatIds.join(', ')
+                    }
+                })
+            },
+            onFailure: (error) => {
+                console.error('Payment failed:', error)
+                router.push({
+                    name: 'booking-confirmation',
+                    query: {
+                        status: 'failed',
+                        message: error.message || 'Payment failed. Please try again.'
+                    }
+                })
+            },
+        })
+    } catch (error) {
+        console.error('Payment initialization error:', error)
+        alert(error.message || 'Failed to initialize payment. Please try again.')
+    }
+}
+
+onMounted(async () => {
+    // Check authentication
+    if (!authStore.isAuthenticated) {
+        // Store the intended route for post-login redirect
+        sessionStorage.setItem('intended_route', route.fullPath)
+        router.push('/login')
+        return
+    }
+
+    // Initialize session
+    bookingStore.initializeSession()
+
+    // Check if we have booking data
+    if (!bookingSummary.value.movie || !bookingSummary.value.showtime) {
+        // No booking data, redirect to home
         router.push('/')
+        return
+    }
+
+    // Fetch seat map
+    try {
+        await bookingStore.fetchSeatMap(bookingSummary.value.showtime.id)
+        isInitialized.value = true
+    } catch (error) {
+        console.error('Error loading seat map:', error)
+        alert('Failed to load seat map. Please try again.')
+        router.back()
     }
 })
 </script>

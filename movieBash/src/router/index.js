@@ -39,6 +39,11 @@ const router = createRouter({
       name: 'profile',
       component: Profile,
     },
+    {
+      path: '/booking/confirmation',
+      name: 'booking-confirmation',
+      component: () => import('@/views/BookingConfirmation.vue'),
+    },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {

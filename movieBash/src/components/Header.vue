@@ -18,22 +18,10 @@
 
         <!-- Search Bar -->
         <div class="search-container">
-          <input
-            type="text"
-            v-model="searchQuery"
-            @input="handleSearch"
-            placeholder="Search for movies..."
-            class="search-input"
-          />
-          <svg
-            class="search-icon"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
+          <input type="text" v-model="searchQuery" @input="handleSearch" placeholder="Search for movies..."
+            class="search-input" />
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.35-4.35"></path>
           </svg>
@@ -42,49 +30,25 @@
         <!-- Location & Sign In -->
         <div class="header-actions">
           <button class="btn btn-ghost btn-sm location-btn" @click="openLocationModal">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
               <circle cx="12" cy="10" r="3"></circle>
             </svg>
             {{ selectedCity }}
           </button>
-          <router-link v-if="!userToken" to="/login" class="btn btn-primary btn-sm"
-            >Sign In</router-link
-          >
+          <router-link v-if="!userToken" to="/login" class="btn btn-primary btn-sm">Sign In</router-link>
           <button v-else class="btn btn-primary btn-sm" @click="handleSignOut">Sign Out</button>
         </div>
 
         <!-- Mobile Menu Toggle -->
         <button class="mobile-menu-toggle" @click="toggleMobileMenu">
-          <svg
-            v-if="!mobileMenuOpen"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
+          <svg v-if="!mobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
             <line x1="3" y1="12" x2="21" y2="12"></line>
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="18" x2="21" y2="18"></line>
           </svg>
-          <svg
-            v-else
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
+          <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -95,72 +59,50 @@
       <transition name="slide-down">
         <nav v-if="mobileMenuOpen" class="nav-mobile">
           <router-link to="/" class="nav-link-mobile" @click="closeMobileMenu">Movies</router-link>
-          <router-link to="/events" class="nav-link-mobile" @click="closeMobileMenu"
-            >Events</router-link
-          >
-          <router-link to="/plays" class="nav-link-mobile" @click="closeMobileMenu"
-            >Plays</router-link
-          >
-          <router-link to="/sports" class="nav-link-mobile" @click="closeMobileMenu"
-            >Sports</router-link
-          >
-          <router-link
-            v-if="userToken"
-            to="/profile"
-            class="nav-link-mobile"
-            @click="closeMobileMenu"
-            >Profile</router-link
-          >
+          <router-link to="/events" class="nav-link-mobile" @click="closeMobileMenu">Events</router-link>
+          <router-link to="/plays" class="nav-link-mobile" @click="closeMobileMenu">Plays</router-link>
+          <router-link to="/sports" class="nav-link-mobile" @click="closeMobileMenu">Sports</router-link>
+          <router-link v-if="userToken" to="/profile" class="nav-link-mobile"
+            @click="closeMobileMenu">Profile</router-link>
           <div class="mobile-actions">
             <button class="btn btn-ghost btn-sm" @click="openLocationModal">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                 <circle cx="12" cy="10" r="3"></circle>
               </svg>
               {{ selectedCity }}
             </button>
-            <router-link v-if="!userToken" to="/login" class="btn btn-primary btn-sm"
-              >Sign In</router-link
-            >
+            <router-link v-if="!userToken" to="/login" class="btn btn-primary btn-sm">Sign In</router-link>
             <button v-else class="btn btn-primary btn-sm" @click="handleSignOut">Sign Out</button>
           </div>
         </nav>
       </transition>
     </div>
-    <LocationModal
-      v-if="showLocationModal"
-      @close="showLocationModal = false"
-      @select="handleCitySelect"
-    />
+    <LocationModal v-if="showLocationModal" @close="showLocationModal = false" @select="handleCitySelect" />
   </header>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useStore } from 'vuex'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import LocationModal from './LocationModal.vue'
+import { useAuthStore } from '../store/modules/auth'
+import { useMoviesStore } from '../store/modules/movies'
 
-const store = useStore()
 const router = useRouter()
 
 const searchQuery = ref('')
 const mobileMenuOpen = ref(false)
 const showLocationModal = ref(false)
 const selectedCity = ref('Mumbai')
+const authStore = useAuthStore()
+const moviesStore = useMoviesStore()
 
-// Computed property to reactively track token from Vuex store
-const userToken = computed(() => store.getters['auth/authToken'])
+// Computed property to reactively track token from auth store
+const userToken = computed(() => authStore.accessToken)
 
 const handleSearch = () => {
-  store.dispatch('movies/searchMovies', searchQuery.value)
+  moviesStore.searchMovies(searchQuery.value)
   if (searchQuery.value && router.currentRoute.value.path !== '/search') {
     router.push('/search')
   }
@@ -171,7 +113,7 @@ const openLocationModal = () => {
 }
 
 const handleSignOut = () => {
-  store.dispatch('auth/logout')
+  authStore.logout()
   router.push('/')
 }
 

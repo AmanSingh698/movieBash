@@ -11,14 +11,7 @@
         <div class="profile-card glass-strong">
           <div class="card-header">
             <div class="user-avatar">
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
@@ -34,14 +27,7 @@
           <div class="profile-stats">
             <div class="stat-item">
               <div class="stat-icon">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
                   <polyline points="17 2 12 7 7 2"></polyline>
                 </svg>
@@ -54,14 +40,7 @@
 
             <div class="stat-item">
               <div class="stat-icon">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                   <line x1="16" y1="2" x2="16" y2="6"></line>
                   <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -80,14 +59,7 @@
         <div class="actions-grid">
           <button class="action-card glass" @click="showBookingsModal = true">
             <div class="action-icon">
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
                 <polyline points="17 2 12 7 7 2"></polyline>
               </svg>
@@ -95,14 +67,7 @@
             <h3 class="action-title">View Bookings</h3>
             <p class="action-description">See all your movie ticket bookings</p>
             <div class="action-arrow">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>
               </svg>
@@ -111,14 +76,7 @@
 
           <button class="action-card glass" @click="showPasswordModal = true">
             <div class="action-icon">
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
@@ -126,14 +84,7 @@
             <h3 class="action-title">Change Password</h3>
             <p class="action-description">Update your account password</p>
             <div class="action-arrow">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>
               </svg>
@@ -153,18 +104,21 @@
 import { ref, computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
+import api from '@/utils/axiosConfig'
 import BookingsModal from '@/components/BookingsModal.vue'
 import ChangePasswordModal from '@/components/ChangePasswordModal.vue'
+import { useAuthStore } from '@/store/modules/auth'
 
 const store = useStore()
 const router = useRouter()
+const authStore = useAuthStore();
 
 const showBookingsModal = ref(false)
 const showPasswordModal = ref(false)
 const bookingsCount = ref(0)
 
-const user = computed(() => store.getters['auth/currentUser'])
-const token = computed(() => store.getters['auth/authToken'])
+const user = computed(() => authStore.getUser)
+const token = computed(() => authStore.getAccessToken)
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
@@ -175,14 +129,23 @@ const formatDate = (dateString) => {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
   // Redirect to login if not authenticated
   if (!token.value) {
     router.push('/login')
+    return
   }
 
-  // TODO: Fetch bookings count from API
-  bookingsCount.value = 0
+  // Fetch bookings count from API
+  try {
+    const response = await api.get('/bookings/user/history')
+    if (response.data.success) {
+      bookingsCount.value = response.data.count || 0
+    }
+  } catch (error) {
+    console.error('Error fetching bookings count:', error)
+    bookingsCount.value = 0
+  }
 })
 </script>
 

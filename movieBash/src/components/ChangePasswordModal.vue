@@ -2,14 +2,7 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-content animate-scale-in">
       <button class="modal-close-btn" @click="$emit('close')">
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -24,44 +17,18 @@
         <div class="form-group">
           <label for="newPassword" class="form-label">New Password</label>
           <div class="password-input-wrapper">
-            <input
-              :type="showNewPassword ? 'text' : 'password'"
-              id="newPassword"
-              v-model="formData.newPassword"
-              class="form-input"
-              placeholder="Enter new password"
-              required
-              minlength="6"
-            />
-            <button
-              type="button"
-              class="toggle-password"
-              @click="showNewPassword = !showNewPassword"
-            >
-              <svg
-                v-if="!showNewPassword"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+            <input :type="showNewPassword ? 'text' : 'password'" id="newPassword" v-model="formData.newPassword"
+              class="form-input" placeholder="Enter new password" required minlength="6" />
+            <button type="button" class="toggle-password" @click="showNewPassword = !showNewPassword">
+              <svg v-if="!showNewPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
-              <svg
-                v-else
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path
-                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
-                ></path>
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                </path>
                 <line x1="1" y1="1" x2="23" y2="23"></line>
               </svg>
             </button>
@@ -71,44 +38,19 @@
         <div class="form-group">
           <label for="confirmPassword" class="form-label">Confirm New Password</label>
           <div class="password-input-wrapper">
-            <input
-              :type="showConfirmPassword ? 'text' : 'password'"
-              id="confirmPassword"
-              v-model="formData.confirmPassword"
-              class="form-input"
-              placeholder="Confirm new password"
-              required
-              minlength="6"
-            />
-            <button
-              type="button"
-              class="toggle-password"
-              @click="showConfirmPassword = !showConfirmPassword"
-            >
-              <svg
-                v-if="!showConfirmPassword"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+            <input :type="showConfirmPassword ? 'text' : 'password'" id="confirmPassword"
+              v-model="formData.confirmPassword" class="form-input" placeholder="Confirm new password" required
+              minlength="6" />
+            <button type="button" class="toggle-password" @click="showConfirmPassword = !showConfirmPassword">
+              <svg v-if="!showConfirmPassword" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
-              <svg
-                v-else
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path
-                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
-                ></path>
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                </path>
                 <line x1="1" y1="1" x2="23" y2="23"></line>
               </svg>
             </button>
@@ -119,11 +61,7 @@
           {{ isLoading ? 'Changing...' : 'Change Password' }}
         </button>
 
-        <div
-          v-if="message"
-          :class="['alert', messageType === 'error' ? 'alert-error' : 'alert-success']"
-          role="alert"
-        >
+        <div v-if="message" :class="['alert', messageType === 'error' ? 'alert-error' : 'alert-success']" role="alert">
           {{ message }}
         </div>
       </form>
@@ -283,6 +221,8 @@ const handleSubmit = async () => {
 }
 
 .form-input {
+  width: 100%;
+  box-sizing: border-box;
   padding: var(--spacing-md);
   background: var(--color-bg-tertiary);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -300,6 +240,11 @@ const handleSubmit = async () => {
 
 .password-input-wrapper {
   position: relative;
+  width: 100%;
+}
+
+.password-input-wrapper .form-input {
+  padding-right: 3rem;
 }
 
 .toggle-password {
@@ -339,6 +284,7 @@ const handleSubmit = async () => {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);

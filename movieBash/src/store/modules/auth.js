@@ -1,83 +1,46 @@
-const state = {
-  token: null,
-  user: null,
-}
+// src/stores/auth.js
+import { defineStore } from 'pinia'
+import { axiosRaw } from '@/utils/axiosConfig'
 
-const getters = {
-  isAuthenticated: (state) => !!state.token,
-  currentUser: (state) => state.user,
-  authToken: (state) => state.token,
-}
+export const useAuthStore = defineStore('auth', {
+  state: () => ({
+    user: JSON.parse(localStorage.getItem('user')) || null,
+    accessToken: localStorage.getItem('accessToken') || null,
+  }),
 
-const mutations = {
-  SET_TOKEN(state, token) {
-    state.token = token
+  getters: {
+    isAuthenticated: (state) => !!state.accessToken,
+    getAccessToken: (state) => state.accessToken,
+    getUser: (state) => state.user,
   },
 
-  SET_USER(state, user) {
-    state.user = user
-  },
+  actions: {
+    setUser(user) {
+      this.user = user
+      localStorage.setItem('user', JSON.stringify(user))
+    },
 
-  CLEAR_AUTH(state) {
-    state.token = null
-    state.user = null
-  },
-}
+    setAccessToken(token) {
+      this.accessToken = token
+      localStorage.setItem('accessToken', token)
+    },
 
-const actions = {
-  login({ commit }, { token, user }) {
-    commit('SET_TOKEN', token)
-    commit('SET_USER', user)
-  },
+    async logout() {
+      try {
+        // Call backend to revoke refresh token
+        await axiosRaw.post('/auth/logout')
+      } catch (error) {
+        console.error('Logout error:', error)
+        // Continue with local logout even if backend call fails
+      }
+      this.clearAuth()
+    },
 
-  async logout({ commit }) {
-    try {
-      // Call backend to revoke refresh token
-      const axios = require('axios').default
-      await axios.post(
-        'http://localhost:3000/api/auth/logout',
-        {},
-        {
-          withCredentials: true,
-        },
-      )
-    } catch (error) {
-      console.error('Logout error:', error)
-      // Continue with local logout even if backend call fails
-    }
-    commit('CLEAR_AUTH')
+    clearAuth() {
+      this.user = null
+      this.accessToken = null
+      localStorage.removeItem('user')
+      localStorage.removeItem('accessToken')
+    },
   },
-
-  setToken({ commit }, token) {
-    commit('SET_TOKEN', token)
-  },
-
-  setUser({ commit }, user) {
-    commit('SET_USER', user)
-  },
-
-  async refreshToken({ commit }) {
-    try {
-      const axios = require('axios').default
-      const response = await axios.post(
-        'http://localhost:3000/api/auth/refresh',
-        {},
-        { withCredentials: true },
-      )
-      const newToken = response.data.accessToken
-      commit('SET_TOKEN', newToken)
-      return newToken
-    } catch (error) {
-      commit('CLEAR_AUTH')
-      throw error
-    }
-  },
-}
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  mutations,
-  actions,
-}
+})

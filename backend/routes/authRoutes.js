@@ -3,6 +3,7 @@ const router = express.Router();
 const authController = require("../controllers/authController");
 
 router.post("/login", authController.login);
+router.post("/google", authController.googleLogin);
 router.post("/register", authController.register);
 router.post("/refresh", authController.refreshToken); // client calls this to get new access token (cookie sent automatically)
 router.post("/logout", authController.logout);

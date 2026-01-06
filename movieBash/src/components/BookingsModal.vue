@@ -2,14 +2,7 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-content animate-scale-in">
       <button class="modal-close-btn" @click="$emit('close')">
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -26,14 +19,7 @@
       </div>
 
       <div v-else-if="bookings.length === 0" class="empty-state">
-        <svg
-          width="64"
-          height="64"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-        >
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
           <polyline points="17 2 12 7 7 2"></polyline>
         </svg>
@@ -52,14 +38,7 @@
 
           <div class="booking-details">
             <div class="detail-item">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                 <line x1="16" y1="2" x2="16" y2="6"></line>
                 <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -69,14 +48,7 @@
             </div>
 
             <div class="detail-item">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
@@ -84,14 +56,7 @@
             </div>
 
             <div class="detail-item">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                 <circle cx="12" cy="10" r="3"></circle>
               </svg>
@@ -99,14 +64,7 @@
             </div>
 
             <div class="detail-item">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
                 <polyline points="17 2 12 7 7 2"></polyline>
               </svg>
@@ -118,6 +76,17 @@
             <span class="booking-id">Booking ID: {{ booking.id }}</span>
             <span class="booking-total">₹{{ booking.totalAmount }}</span>
           </div>
+
+          <div class="booking-actions">
+            <button class="btn-ticket" @click="downloadTicket(booking)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Get Ticket
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -128,8 +97,12 @@
 import { ref, onMounted } from 'vue'
 import api from '@/utils/axiosConfig'
 import { useStore } from 'vuex'
+import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
+import { useAuthStore } from '@/store/modules/auth'
 
 const store = useStore()
+const authStore = useAuthStore()
 const emit = defineEmits(['close'])
 
 const bookings = ref([])
@@ -147,8 +120,25 @@ const formatDate = (dateString) => {
 const fetchBookings = async () => {
   isLoading.value = true
   try {
-    const response = await api.get('/bookings')
-    bookings.value = response.data.bookings || []
+    const response = await api.get('/bookings/user/history')
+    if (response.data.success) {
+      // Map backend data to frontend format
+      bookings.value = response.data.data.map(booking => ({
+        id: booking.id,
+        movieTitle: booking.movie_title,
+        bookingDate: booking.booked_at,
+        showTime: new Date(booking.start_time).toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        theater: booking.theatre_name,
+        seats: booking.items.map(item => item.seat_label),
+        totalAmount: booking.total_amount,
+        status: booking.status
+      }))
+    }
   } catch (err) {
     console.error('Error fetching bookings:', err)
     bookings.value = []
@@ -160,6 +150,116 @@ const fetchBookings = async () => {
 onMounted(() => {
   fetchBookings()
 })
+
+const downloadTicket = async (booking) => {
+  try {
+    const doc = new jsPDF();
+
+    // Header Gradient-like background
+    doc.setFillColor(20, 20, 20); // Dark background
+    doc.rect(0, 0, 210, 297, "F");
+
+    // Ticket Container
+    doc.setFillColor(30, 30, 30);
+    doc.roundedRect(15, 20, 180, 240, 5, 5, "F");
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(15, 20, 180, 240, 5, 5, "S");
+
+    // Title
+    doc.setTextColor(168, 85, 247); // Purple accent
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("MovieBash Ticket", 105, 40, { align: "center" });
+
+    // Movie Title
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.text(booking.movieTitle, 105, 60, { align: "center" });
+
+    // Divider
+    doc.setDrawColor(100, 100, 100);
+    doc.line(30, 70, 180, 70);
+
+    // Details Section
+    doc.setFontSize(12);
+    doc.setTextColor(200, 200, 200);
+
+    const leftCol = 30;
+    const rightCol = 120;
+    let y = 90;
+    const gap = 20;
+
+    // Row 1
+    doc.setFont("helvetica", "bold");
+    doc.text("Date & Time", leftCol, y);
+    doc.text("Theater", rightCol, y);
+
+    y += 8;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(255, 255, 255);
+    doc.text(`${booking.bookingDate}`, leftCol, y);
+    doc.text(booking.showTime, leftCol, y + 6); // Time below date
+    doc.text(booking.theater, rightCol, y);
+
+    y += gap + 5;
+
+    // Row 2
+    doc.setTextColor(200, 200, 200);
+    doc.setFont("helvetica", "bold");
+    doc.text("Seats", leftCol, y);
+    doc.text("Booking ID", rightCol, y);
+
+    y += 8;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(255, 255, 255);
+    doc.text(booking.seats.join(", "), leftCol, y);
+    doc.text(String(booking.id), rightCol, y);
+
+    y += gap;
+
+    // Row 3
+    doc.setTextColor(200, 200, 200);
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Amount", leftCol, y);
+    doc.text("Booked By", rightCol, y);
+
+    y += 8;
+    doc.setTextColor(60, 180, 80); // Green price (and name color reset)
+    doc.setFont("helvetica", "normal");
+
+    // Amount
+    doc.setFontSize(16);
+    doc.text(`Rs. ${booking.totalAmount}`, leftCol, y);
+
+    // Name
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.text(authStore.getUser?.name || 'Guest', rightCol, y);
+
+    // QR Code
+    // Data to encode: can be a URL or just JSON string of details
+    // For now, let's encode the booking ID verification URL (mock)
+    const qrData = JSON.stringify({
+      id: booking.id,
+      movie: booking.movieTitle,
+      seats: booking.seats,
+      date: booking.bookingDate
+    });
+
+    const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
+    doc.addImage(qrDataUrl, "PNG", 65, 170, 80, 80);
+
+    doc.setFontSize(10);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Scan to verify details", 105, 260, { align: "center" });
+
+    doc.save(`ticket-${booking.id}.pdf`);
+  } catch (error) {
+    console.error("Error generating ticket:", error);
+    alert("Failed to generate ticket. Please try again.");
+  }
+};
 </script>
 
 <style scoped>
@@ -372,6 +472,7 @@ onMounted(() => {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -395,5 +496,34 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+</style>
+
+<style scoped>
+.booking-actions {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-ticket {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: var(--color-accent-primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.btn-ticket:hover {
+  background: var(--color-accent-secondary);
 }
 </style>

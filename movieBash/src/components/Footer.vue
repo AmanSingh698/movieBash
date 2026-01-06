@@ -6,7 +6,8 @@
                 <div class="footer-section">
                     <h3 class="gradient-text footer-logo">MovieBash</h3>
                     <p class="footer-description">
-                        Your ultimate destination for booking movie tickets online. Experience cinema like never before.
+                        Your ultimate destination for booking movie tickets online. Experience cinema like never
+                        before.
                     </p>
                     <div class="social-links">
                         <a href="#" class="social-link" aria-label="Facebook">
@@ -71,7 +72,7 @@
 
             <!-- Bottom Bar -->
             <div class="footer-bottom">
-                <p>&copy; 2024 MovieBash. All rights reserved.</p>
+                <p>&copy; 2025 MovieBash. All rights reserved.</p>
                 <p>Made with ❤️ for movie lovers</p>
             </div>
         </div>

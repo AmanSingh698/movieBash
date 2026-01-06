@@ -102,7 +102,7 @@
 
             <div class="auth-footer">
                 <p>
-                    {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
+                    {{ isLogin ? "Don't have an account?" : 'Already have an account?' }}
                     <a href="#" @click.prevent="toggleMode" class="toggle-link">
                         {{ isLogin ? 'Sign Up' : 'Sign In' }}
                     </a>
@@ -123,8 +123,8 @@ const store = useStore()
 const props = defineProps({
     initialMode: {
         type: String,
-        default: 'login'
-    }
+        default: 'login',
+    },
 })
 
 const emit = defineEmits(['close', 'login', 'signup'])
@@ -136,7 +136,7 @@ const formData = reactive({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
 })
 
 const serverMessage = ref('')
@@ -168,7 +168,7 @@ const handleSubmit = async () => {
         try {
             const payload = {
                 email: formData.email,
-                password: formData.password
+                password: formData.password,
             }
             const response = await axios.post('http://localhost:3000/api/auth/login', payload)
 
@@ -176,7 +176,7 @@ const handleSubmit = async () => {
             //     showMessage(response.data.message, 'error')
             //     return
             // }
-            console.log("Login Response : ", response.data);
+            console.log('Login Response : ', response.data)
             if (response.data.accessToken) {
                 await store.dispatch('auth/setToken', response.data.accessToken)
             }
@@ -184,8 +184,8 @@ const handleSubmit = async () => {
                 await store.dispatch('auth/setUser', response.data.user)
             }
 
-            console.log(store.getters['auth/getToken']);
-            console.log(store.getters['auth/getUser']);
+            console.log(store.getters['auth/getToken'])
+            console.log(store.getters['auth/getUser'])
 
             showMessage('Login successful', 'success', true, 1500)
             emit('login', response.data)
@@ -197,7 +197,8 @@ const handleSubmit = async () => {
                 router.push('/')
             }, 1500)
         } catch (err) {
-            const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Login failed'
+            const msg =
+                err.response?.data?.message || err.response?.data?.error || err.message || 'Login failed'
             showMessage(msg, 'error')
             console.error('Login error:', err)
         }
@@ -211,7 +212,7 @@ const handleSubmit = async () => {
             const payload = {
                 name: formData.name,
                 email: formData.email,
-                password: formData.password
+                password: formData.password,
             }
             const response = await axios.post('http://localhost:3000/api/auth/register', payload)
 
@@ -232,7 +233,8 @@ const handleSubmit = async () => {
                 isLogin.value = true
             }, 2000)
         } catch (err) {
-            const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Signup failed'
+            const msg =
+                err.response?.data?.message || err.response?.data?.error || err.message || 'Signup failed'
             showMessage(msg, 'error')
             console.error('Signup error:', err)
         }

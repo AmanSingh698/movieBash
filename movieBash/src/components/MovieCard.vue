@@ -1,11 +1,12 @@
 <template>
     <div class="movie-card card glass card-hover" @click="handleClick">
         <div class="movie-poster-container">
-            <img :src="movie.poster" :alt="movie.title" class="movie-poster" />
+            <img :src="moviePoster" :alt="movie.title" class="movie-poster" />
             <div class="movie-overlay">
-                <button class="btn btn-primary btn-sm">Book Now</button>
+                <button v-if="movie.status === 'now_showing'" class="btn btn-primary btn-sm">Book Now</button>
+                <button v-if="movie.status === 'coming_soon'" class="btn btn-primary btn-sm">Coming Soon</button>
             </div>
-            <div class="rating-badge">
+            <div v-if="movie.status === 'now_showing'" class="rating-badge">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                     <polygon
                         points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
@@ -14,23 +15,24 @@
                 {{ movie.rating }}
             </div>
             <div class="format-badges">
-                <span v-for="format in movie.format" :key="format" class="badge-mini">{{ format }}</span>
+                <span v-for="format in movieFormats" :key="format" class="badge-mini">{{ format }}</span>
             </div>
         </div>
 
         <div class="movie-info">
             <h3 class="movie-title">{{ movie.title }}</h3>
             <div class="movie-subtext">
-                <span class="genre-text">{{ movie.genre.slice(0, 2).join(', ') }}</span>
-                <span class="dot">•</span>
-                <span>{{ movie.duration }}</span>
+                <span v-if="movie.status === 'now_showing'" class="genre-text">{{ movieGenres }}</span>
+                <span v-if="movie.status === 'now_showing'" class="dot">•</span>
+                <span v-if="movie.status === 'now_showing'">{{ movieDuration }}</span>
             </div>
-            <div class="movie-lang">{{ movie.language.join(', ') }}</div>
+            <div class="movie-lang">{{ movie.language }}</div>
         </div>
     </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -42,8 +44,43 @@ const props = defineProps({
 
 const router = useRouter()
 
+// Transform API data to component format
+const moviePoster = computed(() => props.movie.poster_url || props.movie.poster || '')
+
+const movieFormats = computed(() => {
+    // API returns formats as comma-separated string: "2D,IMAX"
+    if (typeof props.movie.formats === 'string') {
+        return props.movie.formats.split(',').map(f => f.trim())
+    }
+    return props.movie.format || []
+})
+
+const movieGenres = computed(() => {
+    // API returns genres as comma-separated string: "Action,Thriller"
+    if (typeof props.movie.genres === 'string') {
+        const genreArray = props.movie.genres.split(',').map(g => g.trim())
+        return genreArray.slice(0, 2).join(', ')
+    }
+    if (Array.isArray(props.movie.genre)) {
+        return props.movie.genre.slice(0, 2).join(', ')
+    }
+    return ''
+})
+
+const movieDuration = computed(() => {
+    // API returns runtime_minutes as number
+    if (props.movie.runtime_minutes) {
+        const hours = Math.floor(props.movie.runtime_minutes / 60)
+        const minutes = props.movie.runtime_minutes % 60
+        return `${hours}h ${minutes}m`
+    }
+    return props.movie.duration || ''
+})
+
 const handleClick = () => {
-    router.push(`/movie/${props.movie.id}`)
+    if (props.movie.status === 'now_showing') {
+        router.push(`/movie/${props.movie.id}`)
+    }
 }
 </script>
 

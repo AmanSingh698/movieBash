@@ -2,9 +2,10 @@
     <div class="movie-details" v-if="movieDetails.title">
         <!-- Hero Video (Visible only in Video Mode) -->
         <div v-if="isVideoMode && movieDetails.trailer_link" class="hero-video-container"
-            :class="{ active: isVideoPlaying }">
-            <video ref="heroVideo" class="hero-video" autoplay muted loop playsinline @play="onVideoPlay">
-                <source :src="movieDetails.trailer_link" type="video/mp4" />
+            :class="{ 'active': isVideoMode }">
+            <video ref="heroVideo" class="hero-video" autoplay muted loop playsinline
+                :poster="movieDetails.backdrop_url">
+                <source :src="movieDetails.trailer_link" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
             <button class="close-video-btn" @click="closeHeroVideo">
@@ -48,103 +49,95 @@
 
         <!-- Static Backdrop (Fallback if no video or if trailer is playing) -->
         <transition name="fade">
-            <div v-if="!isVideoPlaying && !isPlayingTrailer" class="movie-backdrop"
-                :style="{ backgroundImage: `url(${movieDetails.backdrop_url})` }"></div>
+            <div v-if="!isVideoMode && !isPlayingTrailer" class="movie-backdrop"
+                :style="{ backgroundImage: `url(${movieDetails.backdrop_url})` }">
+            </div>
         </transition>
 
         <!-- Gradient Overlay (Always visible on top of video/image) -->
         <transition name="fade">
-            <div v-if="!isPlayingTrailer && !isVideoPlaying" class="backdrop-overlay"></div>
+            <div v-if="!isPlayingTrailer && !isVideoMode" class="backdrop-overlay"></div>
         </transition>
 
         <!-- Movie Info -->
         <div class="container">
-            <div class="movie-header" :class="{ hidden: isVideoPlaying || isPlayingTrailer }">
-                <div class="movie-poster-large">
-                    <img :src="movieDetails.poster_url" :alt="movieDetails.title" />
+            <transition name="fade">
+                <div v-if="!isVideoMode && !isPlayingTrailer" class="movie-header">
+                    <div class="movie-poster-large">
+                        <img :src="movieDetails.poster_url" :alt="movieDetails.title" />
+                    </div>
+
+                    <div class="movie-info-main">
+                        <h1 class="movie-title-large">{{ movieDetails.title }}</h1>
+
+                        <div class="movie-meta-large">
+                            <div class="rating-large">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <polygon
+                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                    </polygon>
+                                </svg>
+                                <span class="rating-value">{{ movieDetails.rating }}/10</span>
+                            </div>
+                            <span class="separator">•</span>
+                            <span>{{ movieDetails.runtime_minutes }} mins</span>
+                            <span class="separator">•</span>
+                            <span>{{ formatReleaseDate(movieDetails.release_date) }}</span>
+                        </div>
+
+                        <div class="genre-tags-large">
+                            <span v-for="genre in movieDetails.genres" :key="genre" class="badge badge-primary">
+                                {{ genre }}
+                            </span>
+                        </div>
+
+                        <p class="synopsis-large">{{ movieDetails.synopsis }}</p>
+
+                        <div class="movie-details-grid">
+                            <div class="detail-item">
+                                <strong>Director:</strong> {{ movieDetails.directors.join(', ') }}
+                            </div>
+                            <div class="detail-item">
+                                <strong>Cast:</strong> {{ movieDetails.cast.join(', ') }}
+                            </div>
+                            <div class="detail-item">
+                                <strong>Languages:</strong> {{ movieDetails.languages.join(', ') }}
+                            </div>
+                            <div class="detail-item">
+                                <strong>Formats:</strong> {{ movieDetails.formats.join(', ') }}
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-lg" @click="scrollToShowtimes">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                                Book Tickets
+                            </button>
+
+                            <!-- Watch Trailer Button -->
+                            <button v-if="movieDetails.trailer_link" class="btn btn-ghost btn-lg"
+                                @click="handleWatchTrailer">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                                </svg>
+                                Watch Trailer
+                            </button>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="movie-info-main">
-                    <h1 class="movie-title-large">{{ movieDetails.title }}</h1>
-
-                    <div class="movie-meta-large">
-                        <div class="rating-large">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <polygon
-                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                                </polygon>
-                            </svg>
-                            <span class="rating-value">{{ movieDetails.rating }}/10</span>
-                        </div>
-                        <span class="separator">•</span>
-                        <span>{{ movieDetails.runtime_minutes }} mins</span>
-                        <span class="separator">•</span>
-                        <span>{{ formatReleaseDate(movieDetails.release_date) }}</span>
-                    </div>
-
-                    <div class="genre-tags-large">
-                        <span v-for="genre in movieDetails.genres" :key="genre" class="badge badge-primary">
-                            {{ genre }}
-                        </span>
-                    </div>
-
-                    <p class="synopsis-large">{{ movieDetails.synopsis }}</p>
-
-                    <div class="movie-details-grid">
-                        <div class="detail-item">
-                            <strong>Director:</strong> {{ movieDetails.directors.join(', ') }}
-                        </div>
-                        <div class="detail-item"><strong>Cast:</strong> {{ movieDetails.cast.join(', ') }}</div>
-                        <div class="detail-item">
-                            <strong>Languages:</strong> {{ movieDetails.languages.join(', ') }}
-                        </div>
-                        <div class="detail-item">
-                            <strong>Formats:</strong> {{ movieDetails.formats.join(', ') }}
-                        </div>
-                    </div>
-
-                    <div class="action-buttons">
-                        <button class="btn btn-primary btn-lg" @click="scrollToShowtimes">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="16" y1="2" x2="16" y2="6"></line>
-                                <line x1="8" y1="2" x2="8" y2="6"></line>
-                                <line x1="3" y1="10" x2="21" y2="10"></line>
-                            </svg>
-                            Book Tickets
-                        </button>
-
-                        <!-- Watch Trailer Button -->
-                        <button v-if="movieDetails.trailer_link" class="btn btn-ghost btn-lg"
-                            @click="handleWatchTrailer">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polygon points="10 8 16 12 10 16 10 8"></polygon>
-                            </svg>
-                            Watch Trailer
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Spacer for Hero Video -->
-            <div v-if="isVideoPlaying" class="video-spacer" style="height: 600px; width: 100%"></div>
+            </transition>
 
             <!-- Showtimes Section -->
             <section class="showtimes-section" ref="showtimesSection">
                 <h2 class="section-title">Select Theater & Showtime</h2>
-
-                <!-- Date Selector -->
-                <div class="date-selector">
-                    <button v-for="date in availableDates" :key="date.value"
-                        :class="['date-btn', { active: selectedDate === date.value }]"
-                        @click="selectedDate = date.value">
-                        <div class="date-day">{{ date.day }}</div>
-                        <div class="date-date">{{ date.date }}</div>
-                    </button>
-                </div>
 
                 <div v-if="groupedTheaters.length > 0" class="theaters-list">
                     <div v-for="theater in groupedTheaters" :key="theater.id" class="theater-card glass">
@@ -195,103 +188,54 @@ const bookingStore = useBookingStore()
 const router = useRouter()
 const route = useRoute()
 
-const movieId = route.params.id
-const movieDetails = ref({})
-const showDetails = ref([])
+const movieId = route.params.id;
+const movieDetails = ref({});
+const showDetails = ref([]);
 const showtimesSection = ref(null)
 const isPlayingTrailer = ref(false)
 const isMuted = ref(true)
 const heroVideo = ref(null)
 const isVideoMode = ref(false)
-const isVideoPlaying = ref(false)
-const selectedDate = ref(new Date().toISOString().split('T')[0]) // Today's date in YYYY-MM-DD
-
-// Generate next 7 days for date selector
-const availableDates = computed(() => {
-    const dates = []
-    const today = new Date()
-
-    for (let i = 0; i < 7; i++) {
-        const date = new Date(today)
-        date.setDate(today.getDate() + i)
-
-        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-        const monthNames = [
-            'Jan',
-            'Feb',
-            'Mar',
-            'Apr',
-            'May',
-            'Jun',
-            'Jul',
-            'Aug',
-            'Sep',
-            'Oct',
-            'Nov',
-            'Dec',
-        ]
-
-        dates.push({
-            value: date.toISOString().split('T')[0], // YYYY-MM-DD
-            day: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dayNames[date.getDay()],
-            date: `${monthNames[date.getMonth()]} ${date.getDate()}`,
-        })
-    }
-
-    return dates
-})
 
 const toggleMute = () => {
     if (heroVideo.value) {
-        heroVideo.value.muted = !heroVideo.value.muted
-        isMuted.value = heroVideo.value.muted
+        heroVideo.value.muted = !heroVideo.value.muted;
+        isMuted.value = heroVideo.value.muted;
     }
-}
-
-const onVideoPlay = () => {
-    isVideoPlaying.value = true
 }
 
 const closeHeroVideo = () => {
     isVideoMode.value = false
-    isVideoPlaying.value = false
 }
 
 const openHeroVideo = () => {
     isVideoMode.value = true
-    isVideoPlaying.value = false
     isPlayingTrailer.value = false
 }
 
 // Convert YouTube URL to embed URL
 const trailerEmbedUrl = computed(() => {
-    if (!movieDetails.value.trailer_link) return ''
+    if (!movieDetails.value.trailer_link) return '';
 
-    const url = movieDetails.value.trailer_link
+    const url = movieDetails.value.trailer_link;
 
-    return url
-})
+    return url;
+});
 
-// Group shows by theater and filter by selected date
+// Group shows by theater
 const groupedTheaters = computed(() => {
-    const theaterMap = new Map()
+    const theaterMap = new Map();
 
-    showDetails.value.forEach((show) => {
-        // Filter by selected date
-        const showDate = new Date(show.start_time).toISOString().split('T')[0]
-        if (showDate !== selectedDate.value) {
-            return // Skip shows not on selected date
-        }
-
-        const theaterId = show.theatre.id
+    showDetails.value.forEach(show => {
+        const theaterId = show.theatre.id;
 
         if (!theaterMap.has(theaterId)) {
             theaterMap.set(theaterId, {
                 id: theaterId,
                 name: show.theatre.name,
                 location: `${show.theatre.city}, ${show.theatre.state}`,
-                showtimes: [],
-            })
+                showtimes: []
+            });
         }
 
         theaterMap.get(theaterId).showtimes.push({
@@ -304,38 +248,37 @@ const groupedTheaters = computed(() => {
             base_price: show.base_price,
             // min_price_class: show.min_price_class,
             seat_prices: show.seat_prices,
-            screen: show.screen,
-            start_time: show.start_time, // Add start_time for date display
-        })
-    })
+            screen: show.screen
+        });
+    });
 
-    return Array.from(theaterMap.values())
-})
+    return Array.from(theaterMap.values());
+});
 
 // Format release date
 const formatReleaseDate = (dateString) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
+    if (!dateString) return '';
+    const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
-        day: 'numeric',
-    })
+        day: 'numeric'
+    });
 }
 
 const handleWatchTrailer = () => {
-    openHeroVideo()
+    openHeroVideo();
 }
 
 const playTrailer = () => {
-    isPlayingTrailer.value = true
-    isVideoMode.value = false
+    isPlayingTrailer.value = true;
+    isVideoMode.value = false;
     // Scroll to top to ensure video is visible
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 const closeTrailer = () => {
-    isPlayingTrailer.value = false
+    isPlayingTrailer.value = false;
 }
 
 const scrollToShowtimes = () => {
@@ -349,36 +292,34 @@ const selectShowtime = (theater, showtime) => {
         theater: {
             id: theater.id,
             name: theater.name,
-            location: theater.location,
+            location: theater.location
         },
         showtime: {
-            id: showtime.show_id, // Add id for API calls
             show_id: showtime.show_id,
             time: showtime.time,
             format: showtime.format,
             language: showtime.language,
             screen: showtime.screen,
-            seat_prices: showtime.seat_prices,
-            start_time: showtime.start_time, // Add start_time for date display
-        },
+            seat_prices: showtime.seat_prices
+        }
     })
 
     // Navigate to seat selection page
-    router.push(`/booking/${movieDetails.value.id}`)
+    router.push(`/booking/${movieDetails.value.id}/seats/${showtime.show_id}`)
 }
 
 const getMovieDetails = async () => {
     try {
         const response = await api.post(`/movies/details/${movieId}`)
-        movieDetails.value = response.data.getMovieDetails
-        showDetails.value = response.data.showTimingAndDetails
+        movieDetails.value = response.data.getMovieDetails;
+        showDetails.value = response.data.showTimingAndDetails;
     } catch (error) {
         console.log(error)
     }
 }
 
 onMounted(() => {
-    getMovieDetails()
+    getMovieDetails();
 })
 </script>
 
@@ -446,10 +387,15 @@ onMounted(() => {
     z-index: 0;
 }
 
+.hero-video-container.active {
+    position: relative;
+    z-index: 10;
+}
+
 .hero-video {
     width: 100%;
     height: 100%;
-    /* object-fit: cover; */
+    object-fit: cover;
 }
 
 .video-controls {
@@ -486,7 +432,7 @@ onMounted(() => {
     right: 0;
     height: 600px;
     background-size: cover;
-    background-position: top;
+    background-position: center;
     z-index: 0;
 }
 
@@ -507,19 +453,6 @@ onMounted(() => {
     grid-template-columns: 300px 1fr;
     gap: var(--spacing-2xl);
     margin-bottom: var(--spacing-3xl);
-    transition:
-        opacity 0.5s ease,
-        visibility 0.5s;
-}
-
-.movie-header.hidden {
-    opacity: 0;
-    visibility: hidden;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 20;
 }
 
 .movie-poster-large {
@@ -588,7 +521,7 @@ onMounted(() => {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-md);
     padding: var(--spacing-lg);
-    /* background: var(--color-bg-card); */
+    background: var(--color-bg-card);
     border-radius: var(--radius-lg);
     backdrop-filter: blur(10px);
 }
@@ -618,54 +551,6 @@ onMounted(() => {
     font-size: var(--font-size-2xl);
     font-weight: 700;
     margin-bottom: var(--spacing-xl);
-}
-
-.date-selector {
-    display: flex;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-xl);
-    overflow-x: auto;
-    padding-bottom: var(--spacing-sm);
-}
-
-.date-btn {
-    flex-shrink: 0;
-    padding: var(--spacing-md) var(--spacing-lg);
-    background: var(--color-bg-tertiary);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-lg);
-    cursor: pointer;
-    transition: all var(--transition-base);
-    text-align: center;
-    min-width: 100px;
-    margin-top: 5px;
-}
-
-.date-btn:hover {
-    border-color: rgba(168, 85, 247, 0.5);
-    transform: translateY(-2px);
-}
-
-.date-btn.active {
-    background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-secondary));
-    border-color: transparent;
-}
-
-.date-day {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin-bottom: 4px;
-}
-
-.date-date {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
-}
-
-.date-btn.active .date-day,
-.date-btn.active .date-date {
-    color: white;
 }
 
 .theaters-list {

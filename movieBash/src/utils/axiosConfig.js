@@ -1,112 +1,153 @@
+// src/utils/api.js
 import axios from 'axios'
-import store from '@/store'
-import router from '@/router'
+import { useAuthStore } from '../store/modules/auth'
+import { goToLogin } from './navigation' // safe helper; falls back to window.location if not initialized
 
-// Create axios instance with base configuration
-const axiosInstance = axios.create({
-  baseURL: 'http://localhost:3000/api',
-  withCredentials: true, // Important: send cookies with requests
-  headers: {
-    'Content-Type': 'application/json',
-  },
+const BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3000/api' // adjust in .env
+
+// plain axios instance used for refresh calls to avoid interceptor loops
+const axiosRaw = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true, // send refresh cookie
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 10000,
 })
 
-// Flag to prevent multiple simultaneous refresh attempts
+// main instance used by app (has interceptors)
+const api = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true, // important so browser sends refresh cookie to /refresh
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 10000,
+})
+
+// Refresh control
 let isRefreshing = false
 let failedQueue = []
 
-const processQueue = (error, token = null) => {
+function processQueue(error, token = null) {
   failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error)
-    } else {
-      prom.resolve(token)
-    }
+    if (error) prom.reject(error)
+    else prom.resolve(token)
   })
   failedQueue = []
 }
 
-// Request interceptor - attach access token to requests
-axiosInstance.interceptors.request.use(
+// Attach token from Pinia (reads fresh token each request)
+api.interceptors.request.use(
   (config) => {
-    const token = store.getters['auth/authToken']
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    try {
+      const auth = useAuthStore()
+      const token = auth.accessToken
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+    } catch (e) {
+      // ignore if store not initialized
     }
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  },
+  (error) => Promise.reject(error),
 )
 
-// Response interceptor - handle token refresh on 401
-axiosInstance.interceptors.response.use(
-  (response) => {
-    return response
-  },
+// Response interceptor handles 401 -> try refresh
+api.interceptors.response.use(
+  (response) => response,
   async (error) => {
     const originalRequest = error.config
 
-    // If error is not 401 or request already retried, reject
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    // if no response (network error) or no status, just reject
+    if (!error.response) return Promise.reject(error)
+
+    // don't try to refresh for login/refresh endpoints or if originalRequest._retry is true
+    const status = error.response.status
+    const requestUrl = originalRequest?.url || ''
+    if (
+      status !== 401 ||
+      originalRequest._retry ||
+      requestUrl.includes('/auth/refresh') ||
+      requestUrl.includes('/auth/login')
+    ) {
       return Promise.reject(error)
     }
 
-    // If already refreshing, queue this request
+    // queue the requests while refresh in progress
     if (isRefreshing) {
-      return new Promise((resolve, reject) => {
+      return new Promise(function (resolve, reject) {
         failedQueue.push({ resolve, reject })
       })
         .then((token) => {
           originalRequest.headers.Authorization = `Bearer ${token}`
-          return axiosInstance(originalRequest)
+          originalRequest._retry = true
+          return api(originalRequest)
         })
-        .catch((err) => {
-          return Promise.reject(err)
-        })
+        .catch((err) => Promise.reject(err))
     }
 
+    // start refresh
     originalRequest._retry = true
     isRefreshing = true
 
+    const auth = useAuthStore()
+
     try {
-      // Call refresh endpoint (refresh token sent automatically via cookie)
-      const response = await axios.post(
-        'http://localhost:3000/api/auth/refresh',
-        {},
-        { withCredentials: true },
-      )
+      // call refresh endpoint using axiosRaw to avoid circular interceptor
+      const refreshRes = await axiosRaw.post('/auth/refresh')
+      const newAccessToken = refreshRes.data?.accessToken
 
-      const newAccessToken = response.data.accessToken
+      if (!newAccessToken) {
+        throw new Error('No access token returned by refresh endpoint')
+      }
 
-      // Update token in Vuex store
-      store.dispatch('auth/setToken', newAccessToken)
+      // store new token in Pinia (and localStorage if your store does that)
+      auth.setAccessToken(newAccessToken)
 
-      // Update authorization header
-      originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+      // update default header
+      api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`
 
-      // Process queued requests
+      // process queued requests
       processQueue(null, newAccessToken)
 
+      // retry original request with new token
+      originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+      isRefreshing = false
+      return api(originalRequest)
+    } catch (err) {
+      // refresh failed -> clear auth and reject all queued requests
+      processQueue(err, null)
       isRefreshing = false
 
-      // Retry original request
-      return axiosInstance(originalRequest)
-    } catch (refreshError) {
-      // Refresh failed - logout user
-      processQueue(refreshError, null)
-      isRefreshing = false
+      try {
+        // clear Pinia
+        auth.clearAuth()
+      } catch (e) {
+        // ignore
+      }
 
-      // Clear auth state
-      store.dispatch('auth/logout')
+      // clear localStorage keys used by auth (safe-guard)
+      try {
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('auth_user')
+      } catch (e) {
+        // ignore
+      }
 
-      // Redirect to login
-      router.push('/login')
+      // Redirect user to login page using navigation helper (falls back to window.location)
+      try {
+        goToLogin()
+      } catch (navErr) {
+        // fallback
+        try {
+          window.location.href = '/login'
+        } catch (e) {
+          // ignore
+        }
+      }
 
-      return Promise.reject(refreshError)
+      return Promise.reject(err)
     }
   },
 )
 
-export default axiosInstance
+export default api
+export { axiosRaw }
