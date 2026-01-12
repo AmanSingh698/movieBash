@@ -17,43 +17,6 @@
                 <span>Seats locked for: {{ formatTime(displayTime) }}</span>
             </div>
 
-            <!-- Screen -->
-            <div class="screen-container">
-                <div class="screen">
-                    <svg width="100%" height="40" viewBox="0 0 400 40" fill="none">
-                        <path d="M0 40 Q200 0 400 40" stroke="url(#screenGradient)" stroke-width="3" fill="none" />
-                        <defs>
-                            <linearGradient id="screenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" style="stop-color:#a855f7;stop-opacity:0.3" />
-                                <stop offset="50%" style="stop-color:#ec4899;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#a855f7;stop-opacity:0.3" />
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                    <p class="screen-label">Screen This Way</p>
-                </div>
-            </div>
-
-            <!-- Seat Legend -->
-            <div class="seat-legend">
-                <div class="legend-item">
-                    <div class="seat-icon seat-available"></div>
-                    <span>Available</span>
-                </div>
-                <div class="legend-item">
-                    <div class="seat-icon seat-selected"></div>
-                    <span>Selected</span>
-                </div>
-                <div class="legend-item">
-                    <div class="seat-icon seat-locked"></div>
-                    <span>Locked</span>
-                </div>
-                <div class="legend-item">
-                    <div class="seat-icon seat-booked"></div>
-                    <span>Booked</span>
-                </div>
-            </div>
-
             <!-- Seats Grid - Grouped by Seat Class -->
             <div class="seats-container">
                 <div v-for="seatClass in seatClasses" :key="seatClass" class="seat-class-section">
@@ -75,17 +38,31 @@
                                     {{ seat.col_index }}
                                 </button>
                             </div>
-                            <div class="row-label">{{ row }}</div>
+                            <!-- Duplicated Row Label for Right Side Removed -->
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Seat Type Pricing -->
-            <div class="pricing-info" v-if="Object.keys(pricing).length > 0">
-                <div v-for="(price, seatClass) in pricing" :key="seatClass" class="price-item">
-                    <span class="seat-type-name">{{ seatClass }}</span>
-                    <span class="seat-type-price">₹{{ price }}</span>
+            <!-- Screen -->
+            <div class="screen-container">
+                <div class="screen-shape"></div>
+                <p class="screen-label">All eyes this way please</p>
+            </div>
+
+            <!-- Seat Legend -->
+            <div class="seat-legend">
+                <div class="legend-item">
+                    <div class="seat-icon seat-available-icon"></div>
+                    <span>Available</span>
+                </div>
+                <div class="legend-item">
+                    <div class="seat-icon seat-selected-icon"></div>
+                    <span>Selected</span>
+                </div>
+                <div class="legend-item">
+                    <div class="seat-icon seat-sold-icon"></div>
+                    <span>Sold</span>
                 </div>
             </div>
         </div>
@@ -262,6 +239,7 @@ onUnmounted(() => {
     width: 100%;
     max-width: 900px;
     margin: 0 auto;
+    padding-bottom: 60px;
 }
 
 .loading-state,
@@ -303,261 +281,230 @@ onUnmounted(() => {
     font-weight: 600;
 }
 
+/* Screen Styles */
 .screen-container {
-    margin-bottom: var(--spacing-3xl);
-    padding: var(--spacing-2xl) 0;
+    margin-top: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
 }
 
-.screen {
-    text-align: center;
-}
-
-.screen svg {
-    filter: drop-shadow(0 4px 20px rgba(236, 72, 153, 0.4));
+.screen-shape {
+    width: 280px;
+    height: 40px;
+    background: linear-gradient(to bottom, #e0f2fe, rgba(224, 242, 254, 0));
+    transform: perspective(100px) rotateX(-10deg);
+    box-shadow: 0 -10px 20px -5px rgba(56, 189, 248, 0.1);
+    border-top: 4px solid #bae6fd;
+    opacity: 0.8;
 }
 
 .screen-label {
-    margin-top: var(--spacing-lg);
     color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    font-weight: 600;
+    font-size: 12px;
+    color: #94a3b8;
 }
 
+/* Legend Styles */
 .seat-legend {
     display: flex;
     justify-content: center;
-    gap: var(--spacing-xl);
-    margin-bottom: var(--spacing-xl);
-    padding: var(--spacing-md);
-    background: var(--color-bg-card);
-    border-radius: var(--radius-lg);
+    gap: 24px;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    font-size: var(--font-size-sm);
-    color: var(--color-text-secondary);
+    gap: 8px;
+    font-size: 12px;
+    color: #64748b;
 }
 
 .seat-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: var(--radius-sm);
-    border: 2px solid;
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    border: 1px solid;
 }
 
+.seat-bestseller-icon {
+    border-color: #f59e0b;
+    background: #fff;
+}
+
+.seat-available-icon {
+    border-color: #10b981;
+    background: #fff;
+}
+
+.seat-selected-icon {
+    border-color: #10b981;
+    background: #10b981;
+}
+
+.seat-sold-icon {
+    border-color: #e2e8f0;
+    background: #e2e8f0;
+}
+
+/* Seats Container */
 .seats-container {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-2xl);
-    margin-bottom: var(--spacing-xl);
-    padding: var(--spacing-xl);
-    background: var(--color-bg-card);
-    border-radius: var(--radius-xl);
-    overflow-x: auto;
-}
-
-.seat-class-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    padding-bottom: var(--spacing-xl);
-    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
-}
-
-.seat-class-section:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
+    gap: 32px;
+    padding: 0;
+    background: transparent;
 }
 
 .seat-class-header {
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-lg);
-    background: rgba(168, 85, 247, 0.1);
-    border-radius: var(--radius-md);
-    margin-bottom: var(--spacing-md);
+    gap: 8px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 16px;
+}
+
+.seat-class-header::after {
+    /* Divider line */
+    content: '';
+    display: none;
+    /* Handled by border-bottom */
 }
 
 .seat-class-price {
-    font-size: var(--font-size-lg);
-    font-weight: 700;
-    color: var(--color-accent-primary);
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
 }
 
 .seat-class-name {
-    font-size: var(--font-size-base);
-    font-weight: 600;
-    color: var(--color-text-primary);
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
     text-transform: uppercase;
-    letter-spacing: 1px;
 }
 
 .seat-class-rows {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: 12px;
 }
 
 .seat-row {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    justify-content: center;
+    gap: 16px;
 }
 
 .row-label {
-    min-width: 30px;
+    width: 20px;
     text-align: center;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 500;
 }
 
 .seats {
     display: flex;
-    gap: var(--spacing-xs);
-    flex: 1;
-    justify-content: center;
+    gap: 8px;
 }
 
+/* Seat Styles */
 .seat {
-    width: 32px;
-    height: 32px;
-    border: 2px solid;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-xs);
-    font-weight: 600;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #e2e8f0;
+    /* Default border */
+    background: #fff;
+    border-radius: 2px;
+    /* Square with slight radius */
+    font-size: 10px;
+    font-weight: 500;
+    color: #64748b;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.seat-available {
-    background: rgba(16, 185, 129, 0.15);
-    border-color: rgba(16, 185, 129, 0.4);
-    color: #10b981;
-}
-
-.seat-available:hover {
-    background: rgba(16, 185, 129, 0.25);
-    border-color: #10b981;
-    transform: scale(1.1);
-}
-
-.seat-silver {
-    border-color: rgba(148, 163, 184, 0.3);
-}
-
-.seat-gold {
-    border-color: rgba(251, 191, 36, 0.3);
-}
-
-.seat-platinum,
-.seat-premium {
-    border-color: rgba(168, 85, 247, 0.3);
-}
-
-.seat-selected {
-    background: linear-gradient(135deg, #10b981, #059669);
-    border-color: #059669;
-    color: white;
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
-}
-
-.seat-locked {
-    background: rgba(251, 191, 36, 0.2);
-    border-color: #fbbf24;
-    color: #fbbf24;
-    cursor: not-allowed;
-    position: relative;
-}
-
-.seat-locked::after {
-    content: '🔒';
-    position: absolute;
-    font-size: 10px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.seat-booked {
-    background: rgba(107, 114, 128, 0.3);
-    border-color: rgba(107, 114, 128, 0.4);
-    color: #6b7280;
-    cursor: not-allowed;
-    opacity: 0.6;
+    padding: 0;
 }
 
 .seat:disabled {
     cursor: not-allowed;
 }
 
+/* Colors for Seat Tiers - All Available seats are Green */
+.seat-gold,
+.seat-premium,
+.seat-imax,
+.seat-platinum,
+.seat-silver,
+.seat-classic {
+    border-color: #10b981;
+    color: #10b981;
+}
+
+/* Selected State - Overrides class colors */
+.seat-selected {
+    background: #10b981 !important;
+    /* Force green fill */
+    border-color: #10b981 !important;
+    color: white !important;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Booked/Sold State */
+.seat-booked {
+    background: #e2e8f0 !important;
+    border-color: #e2e8f0 !important;
+    color: transparent !important;
+    /* Hide number */
+    cursor: not-allowed;
+}
+
+/* Locked State (treated as Sold for others) */
+.seat-locked {
+    background: #e2e8f0 !important;
+    border-color: #e2e8f0 !important;
+    color: transparent !important;
+    cursor: not-allowed;
+}
+
+.seat-locked::after {
+    content: '';
+    /* Remove lock icon */
+}
+
+/* Hover Effects */
+.seat-available:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
 .pricing-info {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: var(--spacing-md);
-    padding: var(--spacing-lg);
-    background: var(--color-bg-card);
-    border-radius: var(--radius-lg);
-}
-
-.price-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-md);
-    background: var(--color-bg-tertiary);
-    border-radius: var(--radius-md);
-}
-
-.seat-type-name {
-    font-weight: 600;
-    color: var(--color-text-primary);
-}
-
-.seat-type-price {
-    font-size: var(--font-size-lg);
-    font-weight: 700;
-    color: var(--color-accent-primary);
+    display: none;
+    /* Hide old pricing info */
 }
 
 /* Responsive */
 @media (max-width: 768px) {
     .seat {
-        width: 28px;
-        height: 28px;
-        font-size: 10px;
+        width: 24px;
+        height: 24px;
+        font-size: 9px;
     }
 
     .seats {
         gap: 4px;
-    }
-
-    .pricing-info {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 576px) {
-    .seat {
-        width: 24px;
-        height: 24px;
-    }
-
-    .seat-legend {
-        flex-direction: column;
-        gap: var(--spacing-sm);
     }
 }
 </style>

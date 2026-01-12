@@ -79,6 +79,11 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/axiosConfig'
+import { jsPDF } from "jspdf"
+import QRCode from "qrcode"
+import { useAuthStore } from '@/store/modules/auth'
+
+const authStore = useAuthStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -141,8 +146,109 @@ onMounted(async () => {
     loading.value = false
 })
 
-const downloadTicket = () => {
-    alert('Ticket download started...')
+const downloadTicket = async () => {
+    try {
+        const doc = new jsPDF()
+
+        // Header Gradient-like background
+        doc.setFillColor(20, 20, 20) // Dark background
+        doc.rect(0, 0, 210, 297, "F")
+
+        // Ticket Container
+        doc.setFillColor(30, 30, 30)
+        doc.roundedRect(15, 20, 180, 240, 5, 5, "F")
+        doc.setDrawColor(255, 255, 255)
+        doc.setLineWidth(0.5)
+        doc.roundedRect(15, 20, 180, 240, 5, 5, "S")
+
+        // Title
+        doc.setTextColor(168, 85, 247) // Purple accent
+        doc.setFontSize(24)
+        doc.setFont("helvetica", "bold")
+        doc.text("MovieBash Ticket", 105, 40, { align: "center" })
+
+        // Movie Title
+        doc.setTextColor(255, 255, 255)
+        doc.setFontSize(22)
+        doc.text(movieTitle.value || 'Movie Title', 105, 60, { align: "center" })
+
+        // Divider
+        doc.setDrawColor(100, 100, 100)
+        doc.line(30, 70, 180, 70)
+
+        // Details Section
+        doc.setFontSize(12)
+        doc.setTextColor(200, 200, 200)
+
+        const leftCol = 30
+        const rightCol = 120
+        let y = 90
+        const gap = 20
+
+        // Row 1
+        doc.setFont("helvetica", "bold")
+        doc.text("Date & Time", leftCol, y)
+        doc.text("Theater", rightCol, y)
+
+        y += 8
+        doc.setFont("helvetica", "normal")
+        doc.setTextColor(255, 255, 255)
+        // Format time properly if it's a date string
+        const formattedTime = showTime.value
+        doc.text(formattedTime, leftCol, y)
+        doc.text(formattedTime, leftCol, y + 6) // Time below date if needed, simplifying here
+        doc.text(theaterName.value || 'Theater Name', rightCol, y)
+
+        y += gap + 5
+
+        // Row 2
+        doc.setTextColor(200, 200, 200)
+        doc.setFont("helvetica", "bold")
+        doc.text("Seats", leftCol, y)
+        doc.text("Booking ID", rightCol, y)
+
+        y += 8
+        doc.setFont("helvetica", "normal")
+        doc.setTextColor(255, 255, 255)
+        doc.text(seats.value || 'Seats', leftCol, y)
+        doc.text(String(bookingId.value), rightCol, y)
+
+        y += gap
+
+        // Row 3
+        doc.setTextColor(200, 200, 200)
+        doc.setFont("helvetica", "bold")
+        doc.text("Total Amount", leftCol, y)
+        // doc.text("Booked By", rightCol, y)
+
+        y += 8
+        doc.setTextColor(60, 180, 80) // Green price
+        doc.setFont("helvetica", "normal")
+
+        // Amount
+        doc.setFontSize(16)
+        doc.text(`Rs. ${amount.value}`, leftCol, y)
+
+        // QR Code
+        const qrData = JSON.stringify({
+            id: bookingId.value,
+            movie: movieTitle.value,
+            seats: seats.value,
+            amount: amount.value
+        })
+
+        const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 })
+        doc.addImage(qrDataUrl, "PNG", 65, 170, 80, 80)
+
+        doc.setFontSize(10)
+        doc.setTextColor(150, 150, 150)
+        doc.text("Scan to verify details", 105, 260, { align: "center" })
+
+        doc.save(`ticket-${bookingId.value}.pdf`)
+    } catch (err) {
+        console.error('Error generating ticket:', err)
+        alert('Failed to download ticket. Please try again.')
+    }
 }
 
 const goHome = () => {
