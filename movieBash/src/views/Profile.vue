@@ -102,14 +102,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import api from '@/utils/axiosConfig'
 import BookingsModal from '@/components/BookingsModal.vue'
 import ChangePasswordModal from '@/components/ChangePasswordModal.vue'
 import { useAuthStore } from '@/store/modules/auth'
 
-const store = useStore()
 const router = useRouter()
 const authStore = useAuthStore();
 

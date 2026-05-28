@@ -1,9 +1,11 @@
+// src/store/modules/movies.js
 import { defineStore } from 'pinia'
-import { movies as mockMovies, theaters } from '@/data/mockMovies'
+import api from '@/utils/axiosConfig'
 
 export const useMoviesStore = defineStore('movies', {
   state: () => ({
-    allMovies: mockMovies,
+    nowShowing: [],
+    comingSoon: [],
     selectedMovie: null,
     searchQuery: '',
     filters: {
@@ -11,86 +13,113 @@ export const useMoviesStore = defineStore('movies', {
       genre: [],
       format: [],
     },
-    theaters: theaters,
+    loading: false,
+    error: null,
   }),
 
   getters: {
-    featuredMovies: (state) => {
-      return state.allMovies.filter((movie) => movie.featured)
-    },
-
-    nowShowingMovies: (state) => {
-      return state.allMovies.filter((movie) => movie.status === 'now-showing')
-    },
-
-    comingSoonMovies: (state) => {
-      return state.allMovies.filter((movie) => movie.status === 'coming-soon')
-    },
+    // All movies combined for filter/search operations
+    allMovies: (state) => [...state.nowShowing, ...state.comingSoon],
 
     filteredMovies: (state) => {
-      let filtered = state.allMovies
+      let movies = [...state.nowShowing, ...state.comingSoon]
 
-      // Apply search query
       if (state.searchQuery) {
-        filtered = filtered.filter(
-          (movie) =>
-            movie.title.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
-            movie.genre.some((g) => g.toLowerCase().includes(state.searchQuery.toLowerCase())),
+        const q = state.searchQuery.toLowerCase()
+        movies = movies.filter(
+          (m) =>
+            m.title?.toLowerCase().includes(q) ||
+            (typeof m.genres === 'string' && m.genres.toLowerCase().includes(q))
         )
       }
 
-      // Apply language filter
       if (state.filters.language.length > 0) {
-        filtered = filtered.filter((movie) =>
-          movie.language.some((lang) => state.filters.language.includes(lang)),
+        movies = movies.filter((m) =>
+          state.filters.language.some(
+            (lang) => m.language === lang || m.primary_language === lang
+          )
         )
       }
 
-      // Apply genre filter
       if (state.filters.genre.length > 0) {
-        filtered = filtered.filter((movie) =>
-          movie.genre.some((genre) => state.filters.genre.includes(genre)),
-        )
+        movies = movies.filter((m) => {
+          const genreStr = typeof m.genres === 'string' ? m.genres : ''
+          return state.filters.genre.some((g) => genreStr.includes(g))
+        })
       }
 
-      // Apply format filter
       if (state.filters.format.length > 0) {
-        filtered = filtered.filter((movie) =>
-          movie.format.some((format) => state.filters.format.includes(format)),
-        )
+        movies = movies.filter((m) => {
+          const fmtStr = typeof m.formats === 'string' ? m.formats : ''
+          return state.filters.format.some((f) => fmtStr.includes(f))
+        })
       }
 
-      return filtered
+      return movies
     },
 
     availableLanguages: (state) => {
-      const languages = new Set()
-      state.allMovies.forEach((movie) => {
-        movie.language.forEach((lang) => languages.add(lang))
+      const langs = new Set()
+      ;[...state.nowShowing, ...state.comingSoon].forEach((m) => {
+        if (m.primary_language) langs.add(m.primary_language)
       })
-      return Array.from(languages).sort()
+      return Array.from(langs).sort()
     },
 
     availableGenres: (state) => {
       const genres = new Set()
-      state.allMovies.forEach((movie) => {
-        movie.genre.forEach((genre) => genres.add(genre))
+      ;[...state.nowShowing, ...state.comingSoon].forEach((m) => {
+        if (typeof m.genres === 'string') {
+          m.genres.split(',').forEach((g) => g.trim() && genres.add(g.trim()))
+        }
       })
       return Array.from(genres).sort()
     },
 
     availableFormats: (state) => {
       const formats = new Set()
-      state.allMovies.forEach((movie) => {
-        movie.format.forEach((format) => formats.add(format))
+      ;[...state.nowShowing, ...state.comingSoon].forEach((m) => {
+        if (typeof m.formats === 'string') {
+          m.formats.split(',').forEach((f) => f.trim() && formats.add(f.trim()))
+        }
       })
       return Array.from(formats).sort()
     },
   },
 
   actions: {
+    async fetchNowShowing() {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await api.get('movies/nowShowing')
+        this.nowShowing = res.data.movies || []
+      } catch (err) {
+        console.error('Failed to fetch now-showing movies:', err)
+        this.error = 'Could not load now-showing movies.'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchComingSoon() {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await api.get('movies/comingSoon')
+        this.comingSoon = res.data.movies || []
+      } catch (err) {
+        console.error('Failed to fetch coming-soon movies:', err)
+        this.error = 'Could not load coming-soon movies.'
+      } finally {
+        this.loading = false
+      }
+    },
+
     getMovieById(id) {
-      return this.allMovies.find((movie) => movie.id === parseInt(id))
+      return [...this.nowShowing, ...this.comingSoon].find(
+        (m) => m.id === parseInt(id)
+      )
     },
 
     selectMovie(movie) {
@@ -114,11 +143,7 @@ export const useMoviesStore = defineStore('movies', {
     },
 
     clearAllFilters() {
-      this.filters = {
-        language: [],
-        genre: [],
-        format: [],
-      }
+      this.filters = { language: [], genre: [], format: [] }
       this.searchQuery = ''
     },
   },

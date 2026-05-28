@@ -1,9 +1,6 @@
-const mysql = require("mysql2");
-const authController = require("../controllers/authController");
 const pool = require("../services/dbService");
-const moviesController = require("../controllers/moviesController");
 
-const movieModalQueries = {
+const movieModelQueries = {
   getNowShowingMovies: async () => {
     const [rows] = await pool.query(
       `
@@ -103,7 +100,6 @@ LIMIT 3;
     const row = rows[0];
     if (!row) return null;
 
-    // Parse CSV fields into arrays (unique, trimmed)
     const parseCsv = (str) =>
       (str || "")
         .split(",")
@@ -118,7 +114,7 @@ LIMIT 3;
       trailer_link: row.trailer_link,
       video_url: row.video_url,
       rating: row.rating,
-      release_date: row.release_date, // YYYY-MM-DD
+      release_date: row.release_date,
       runtime_minutes: row.runtime_minutes,
       primary_language: row.primary_language,
       status: row.status,
@@ -126,8 +122,8 @@ LIMIT 3;
       backdrop_url: row.backdrop_url,
       genres: parseCsv(row.genres),
       formats: parseCsv(row.formats),
-      directors: parseCsv(row.directors), // array (may be single item)
-      cast: parseCsv(row.cast), // array of actor names
+      directors: parseCsv(row.directors),
+      cast: parseCsv(row.cast),
       languages: Array.from(
         new Set([
           ...(row.languages_in_shows ? parseCsv(row.languages_in_shows) : []),
@@ -136,7 +132,7 @@ LIMIT 3;
       ),
     };
   },
-  // getMovieShows: returns flat list of shows with seat prices, min_price and min_price_class
+
   getMovieShows: async (movieId) => {
     const [showRows] = await pool.query(
       `
@@ -156,14 +152,8 @@ LIMIT 3;
       s.format,
       s.lang                  AS language,
       s.base_price,
-
-      -- Pick MIN price; if none exist, fall back to base_price
       COALESCE(MIN(sp.price), s.base_price) AS min_price,
-
-      -- Aggregated seat prices (not returned directly)
       GROUP_CONCAT(DISTINCT CONCAT(sp.seat_class, '::', sp.price) ORDER BY sp.price SEPARATOR '||') AS seat_price_list,
-
-      -- Find seat_class associated with the minimum price
       (
         SELECT sp2.seat_class 
         FROM show_seat_prices sp2
@@ -196,17 +186,12 @@ LIMIT 3;
           city: r.theatre_city,
           state: r.theatre_state,
         },
-
         start_time: r.start_time,
         end_time: r.end_time,
-
         time: r.time_12,
         time_24: r.time_24,
-
         format: r.format,
         language: r.language,
-
-        // Return only SEAT CLASS (not price)
         seat_class: r.min_seat_class || null,
       };
     });
@@ -215,4 +200,4 @@ LIMIT 3;
   },
 };
 
-module.exports = movieModalQueries;
+module.exports = movieModelQueries;

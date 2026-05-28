@@ -1,4 +1,4 @@
-const bookingModal = require("../modals/bookingModal");
+const bookingModel = require("../models/bookingModel");
 
 const bookingController = {
   /**
@@ -9,7 +9,7 @@ const bookingController = {
     try {
       const { showId } = req.params;
 
-      const seatMap = await bookingModal.getSeatMap(showId);
+      const seatMap = await bookingModel.getSeatMap(showId);
 
       res.status(200).json({
         success: true,
@@ -54,7 +54,7 @@ const bookingController = {
         });
       }
 
-      const result = await bookingModal.lockSeats(
+      const result = await bookingModel.lockSeats(
         showId,
         seatIds,
         sessionId,
@@ -82,6 +82,7 @@ const bookingController = {
   releaseSeats: async (req, res) => {
     try {
       const { showId, seatIds, sessionId } = req.body;
+      const userId = req.user?.id; // Fix #6: authenticated user from JWT
 
       if (!showId || !seatIds || !sessionId) {
         return res.status(400).json({
@@ -90,10 +91,11 @@ const bookingController = {
         });
       }
 
-      const result = await bookingModal.releaseSeats(
+      const result = await bookingModel.releaseSeats(
         showId,
         seatIds,
-        sessionId
+        sessionId,
+        userId  // pass userId so DB filters by owner
       );
 
       res.status(200).json({
@@ -126,7 +128,7 @@ const bookingController = {
         });
       }
 
-      const locks = await bookingModal.getUserLocks(showId, sessionId);
+      const locks = await bookingModel.getUserLocks(showId, sessionId);
 
       res.status(200).json({
         success: true,
@@ -166,7 +168,7 @@ const bookingController = {
         });
       }
 
-      const result = await bookingModal.confirmBooking(
+      const result = await bookingModel.confirmBooking(
         showId,
         seatIds,
         sessionId,
@@ -195,7 +197,7 @@ const bookingController = {
    */
   cleanupExpiredLocks: async (req, res) => {
     try {
-      const result = await bookingModal.cleanupExpiredLocks();
+      const result = await bookingModel.cleanupExpiredLocks();
 
       res.status(200).json({
         success: true,
@@ -218,7 +220,7 @@ const bookingController = {
   getBookingDetails: async (req, res) => {
     try {
       const { id } = req.params;
-      const booking = await bookingModal.getBookingDetails(id);
+      const booking = await bookingModel.getBookingDetails(id);
 
       if (!booking) {
         return res.status(404).json({
@@ -255,7 +257,7 @@ const bookingController = {
         });
       }
 
-      const bookings = await bookingModal.getUserBookings(userId);
+      const bookings = await bookingModel.getUserBookings(userId);
 
       res.status(200).json({
         success: true,

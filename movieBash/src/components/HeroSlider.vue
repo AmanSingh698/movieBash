@@ -124,7 +124,7 @@ const onSwiper = (swiper) => {
 
 const getFeaturedMovies = async () => {
     try {
-        const response = await api.post('/movies/heroSlider')
+        const response = await api.get('/movies/heroSlider')
         featuredMovies.value = response.data.movies || []
     } catch (error) {
         console.error('Error fetching featured movies:', error)

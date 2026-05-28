@@ -19,26 +19,20 @@ const comingSoon = ref([]);
 
 const getShowingMovies = async () => {
     try {
-        const response = await api.post("movies/nowShowing");
-        console.log('API Response:', response.data);
-        // The API returns { message: "...", movies: [...] }
-        // So we access response.data.movies
+        const response = await api.get("movies/nowShowing");
         nowShowing.value = response.data.movies || [];
     } catch (err) {
-        console.error('Error fetching movies:', err);
+        console.error('Error fetching now-showing movies:', err);
         nowShowing.value = [];
     }
 }
 
 const getUpcomingMovies = async () => {
     try {
-        const response = await api.post("movies/comingSoon");
-        console.log('API Response:', response.data);
-        // The API returns { message: "...", movies: [...] }
-        // So we access response.data.movies
+        const response = await api.get("movies/comingSoon");
         comingSoon.value = response.data.movies || [];
     } catch (err) {
-        console.error('Error fetching movies:', err);
+        console.error('Error fetching coming-soon movies:', err);
         comingSoon.value = [];
     }
 }

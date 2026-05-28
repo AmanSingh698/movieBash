@@ -1,8 +1,6 @@
-const mysql = require("mysql2");
-const authController = require("../controllers/authController");
 const pool = require("../services/dbService");
 
-const userModalQueries = {
+const userModelQueries = {
   login: async (email) => {
     try {
       const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [
@@ -10,7 +8,7 @@ const userModalQueries = {
       ]);
       return rows[0] || null;
     } catch (error) {
-      console.log(error);
+      console.error("DB error in userModel.login:", error);
       return null;
     }
   },
@@ -19,7 +17,7 @@ const userModalQueries = {
       const [rows] = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
       return rows[0] || null;
     } catch (error) {
-      console.log(error);
+      console.error("DB error in userModel.findById:", error);
       return null;
     }
   },
@@ -27,11 +25,11 @@ const userModalQueries = {
     try {
       const [rows] = await pool.query(
         "INSERT INTO users (email, password_hash, name, phone, is_verified, avatar_url, last_login, preferred_city, created_at, updated_at) VALUES (?, ?, ?, NULL, NULL, NULL, NULL, NULL, NOW(), NOW())",
-        [email, password, name]
+        [email, password, name],
       );
       return rows;
     } catch (error) {
-      console.log(error);
+      console.error("DB error in userModel.register:", error);
       return null;
     }
   },
@@ -45,14 +43,13 @@ const RefreshModel = {
     userId,
     ttlSeconds,
     userAgent = null,
-    ipAddress = null
+    ipAddress = null,
   ) => {
     try {
       const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
-      // We'll store the JTI as the token_hash for now since that's what we're using
       await pool.query(
         "INSERT INTO refresh_tokens (user_id, token_hash, user_agent, ip_address, expires_at) VALUES (?, ?, ?, ?, ?)",
-        [userId, jti, userAgent, ipAddress, expiresAt]
+        [userId, jti, userAgent, ipAddress, expiresAt],
       );
     } catch (err) {
       console.error("Error storing refresh token:", err);
@@ -63,7 +60,7 @@ const RefreshModel = {
     try {
       const [rows] = await pool.query(
         "SELECT user_id FROM refresh_tokens WHERE token_hash = ? AND expires_at > NOW() AND revoked_at IS NULL",
-        [jti]
+        [jti],
       );
       return rows.length > 0 ? rows[0].user_id : null;
     } catch (err) {
@@ -76,7 +73,7 @@ const RefreshModel = {
     try {
       await pool.query(
         "UPDATE refresh_tokens SET revoked_at = NOW() WHERE token_hash = ?",
-        [jti]
+        [jti],
       );
     } catch (err) {
       console.error("Error revoking refresh token:", err);
@@ -84,4 +81,4 @@ const RefreshModel = {
   },
 };
 
-module.exports = { userModalQueries, RefreshModel };
+module.exports = { userModelQueries, RefreshModel };

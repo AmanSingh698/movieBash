@@ -1,6 +1,6 @@
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
-const bookingModal = require("../modals/bookingModal");
+const bookingModel = require("../models/bookingModel");
 
 // Lazy initialization of Razorpay instance
 let razorpayInstance = null;
@@ -31,25 +31,38 @@ const paymentController = {
    */
   createOrder: async (req, res) => {
     try {
-      const { amount, bookingDetails } = req.body;
+      const { bookingDetails } = req.body;
       const userId = req.user?.id;
 
-      if (!amount || !bookingDetails) {
+      if (!bookingDetails || !bookingDetails.showId || !Array.isArray(bookingDetails.seatIds) || bookingDetails.seatIds.length === 0) {
         return res.status(400).json({
           success: false,
-          message: "Amount and booking details are required",
+          message: "bookingDetails with showId and seatIds are required",
+        });
+      }
+
+      // Fix #4: Recalculate amount from DB — never trust client-supplied price
+      const actualAmount = await bookingModel.getSeatsPrice(
+        bookingDetails.showId,
+        bookingDetails.seatIds
+      );
+
+      if (actualAmount <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Could not determine price for selected seats",
         });
       }
 
       // Create Razorpay order
       const options = {
-        amount: Math.round(amount * 100), // Convert to paise
+        amount: Math.round(actualAmount * 100), // Convert to paise
         currency: "INR",
         receipt: `booking_${Date.now()}`,
         notes: {
           userId: userId,
           showId: bookingDetails.showId,
-          seatCount: bookingDetails.seatIds?.length || 0,
+          seatCount: bookingDetails.seatIds.length,
         },
       };
 
@@ -114,7 +127,7 @@ const paymentController = {
       const { showId, seatIds, sessionId, totalAmount, theatreId } =
         bookingDetails;
 
-      const booking = await bookingModal.confirmBooking(
+      const booking = await bookingModel.confirmBooking(
         showId,
         seatIds,
         sessionId,
@@ -153,14 +166,29 @@ const paymentController = {
 
   /**
    * POST /api/payments/webhook
-   * Handle Razorpay webhooks (optional)
+   * Handle Razorpay webhooks.
+   *
+   * Hardened against:
+   *  - RAZORPAY_WEBHOOK_SECRET not configured (503)
+   *  - Missing or invalid signature (400)
+   *  - Non-payment events that don't carry payload.payment.entity (safe default)
    */
   handleWebhook: async (req, res) => {
     try {
-      const webhookSignature = req.headers["x-razorpay-signature"];
       const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-      // Verify webhook signature
+      // Fail closed: if secret is not configured, reject immediately
+      if (!webhookSecret) {
+        console.error("Webhook secret not configured (RAZORPAY_WEBHOOK_SECRET)");
+        return res.status(503).json({ message: "Webhook endpoint not configured" });
+      }
+
+      const webhookSignature = req.headers["x-razorpay-signature"];
+      if (!webhookSignature) {
+        return res.status(400).json({ message: "Missing webhook signature" });
+      }
+
+      // Verify signature
       const expectedSignature = crypto
         .createHmac("sha256", webhookSecret)
         .update(JSON.stringify(req.body))
@@ -170,23 +198,38 @@ const paymentController = {
         return res.status(400).json({ message: "Invalid webhook signature" });
       }
 
-      const event = req.body.event;
-      const payload = req.body.payload.payment.entity;
+      const event = req.body?.event;
 
-      // Handle different events
+      // Safely extract payment entity — only present for payment events
+      const paymentEntity = req.body?.payload?.payment?.entity;
+
       switch (event) {
         case "payment.captured":
-          console.log("Payment captured:", payload.id);
-          // Update booking status
+          if (paymentEntity) {
+            console.log("Payment captured:", paymentEntity.id);
+            // TODO: Update booking status to 'paid' using paymentEntity.id
+          }
           break;
+
         case "payment.failed":
-          console.log("Payment failed:", payload.id);
-          // Handle failed payment
+          if (paymentEntity) {
+            console.log("Payment failed:", paymentEntity.id);
+            // TODO: Release seat locks / notify user using paymentEntity.id
+          }
           break;
+
+        case "refund.created":
+        case "refund.processed":
+          // Handle refund events without accessing payment entity
+          console.log("Refund event received:", event);
+          break;
+
         default:
-          console.log("Unhandled event:", event);
+          // Log unknown events but don't error — Razorpay may send new event types
+          console.log("Unhandled Razorpay webhook event:", event);
       }
 
+      // Always acknowledge receipt so Razorpay doesn't retry
       res.status(200).json({ received: true });
     } catch (error) {
       console.error("Webhook error:", error);

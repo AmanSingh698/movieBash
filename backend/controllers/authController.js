@@ -1,4 +1,4 @@
-const { userModalQueries, RefreshModel } = require("../modals/authModal");
+const { userModelQueries, RefreshModel } = require("../models/authModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
@@ -79,7 +79,7 @@ const userAuthController = {
     }
 
     try {
-      const user = await userModalQueries.login(email);
+      const user = await userModelQueries.login(email);
 
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -129,7 +129,6 @@ const userAuthController = {
   register: async (req, res) => {
     try {
       const { name, email, password, confirmPassword } = req.body;
-      console.log(req.body);
 
       if (!name || !email || !password || !confirmPassword) {
         return res
@@ -142,14 +141,14 @@ const userAuthController = {
           .json({ message: "Password and Confirm Password do not match" });
       }
       const hashedPassword = await bcrypt.hash(password, 10);
-      const user = await userModalQueries.register(name, email, hashedPassword);
+      const user = await userModelQueries.register(name, email, hashedPassword);
       if (!user) {
         return res.status(401).json({ message: "User Already Exists" });
       }
 
       // Auto-login after register
       // Fetch full user details again to be sure
-      const newUser = await userModalQueries.login(email);
+      const newUser = await userModelQueries.login(email);
 
       const accessToken = await createAccessToken(newUser);
       const jti = uuidv4();
@@ -215,7 +214,7 @@ const userAuthController = {
       }
 
       // Check if user exists
-      let user = await userModalQueries.login(email);
+      let user = await userModelQueries.login(email);
 
       if (!user) {
         // Create new user with random password
@@ -223,10 +222,10 @@ const userAuthController = {
         const randomPassword = uuidv4();
         const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-        await userModalQueries.register(name, email, hashedPassword);
+        await userModelQueries.register(name, email, hashedPassword);
 
         // Fetch the newly created user
-        user = await userModalQueries.login(email);
+        user = await userModelQueries.login(email);
 
         if (!user) {
           return res.status(500).json({ message: "Failed to create user" });
@@ -290,7 +289,7 @@ const userAuthController = {
       }
 
       // Fetch user details to ensure they still exist and get latest info
-      const user = await userModalQueries.findById(userId);
+      const user = await userModelQueries.findById(userId);
       if (!user) {
         return res.status(401).json({ message: "User not found" });
       }
@@ -343,21 +342,6 @@ const userAuthController = {
     } catch (err) {
       next(err);
     }
-  },
-
-  generateJWTToken: async (user) => {
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
-      },
-    );
-    return token;
   },
 };
 

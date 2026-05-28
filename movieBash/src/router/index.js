@@ -19,6 +19,15 @@ const router = createRouter({
       name: 'movie-details',
       component: MovieDetails,
     },
+    // Fix: /booking/confirmation MUST come before /booking/:id.
+    // Vue Router matches top-to-bottom; if /:id is first, the string
+    // "confirmation" is treated as an id param and the confirmation
+    // route is never reached.
+    {
+      path: '/booking/confirmation',
+      name: 'booking-confirmation',
+      component: () => import('@/views/BookingConfirmation.vue'),
+    },
     {
       path: '/booking/:id',
       name: 'booking',
@@ -39,10 +48,11 @@ const router = createRouter({
       name: 'profile',
       component: Profile,
     },
+    // 404 catch-all
     {
-      path: '/booking/confirmation',
-      name: 'booking-confirmation',
-      component: () => import('@/views/BookingConfirmation.vue'),
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: Home,
     },
   ],
   scrollBehavior(to, from, savedPosition) {

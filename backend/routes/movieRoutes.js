@@ -1,15 +1,14 @@
 const express = require("express");
 const router = express.Router();
-// const authController = require("../controllers/authController");
 const moviesController = require("../controllers/moviesController");
 
-// router.post("/login", authController.login);
-// router.post("/register", authController.register);
-// router.post("/refresh", authController.refreshToken); // client calls this to get new access token (cookie sent automatically)
-// router.post("/logout", authController.logout);
+// Fix #8: All movie data-fetching routes changed from POST → GET.
+// - GET is the correct HTTP verb for read-only operations.
+// - Allows HTTP caching by browsers and CDNs.
+// - Makes URLs bookmarkable and back-button friendly.
+router.get("/movies/nowShowing", moviesController.getNowShowingMovies);
+router.get("/movies/comingSoon", moviesController.getComingSoonMovies);
+router.get("/movies/heroSlider", moviesController.getMoviesForHeroSlider);
+router.get("/movies/details/:id", moviesController.getMovieDetails);
 
-router.post("/movies/nowShowing", moviesController.getNowShowingMovies);
-router.post("/movies/comingSoon", moviesController.getComingSoonMovies);
-router.post("/movies/heroSlider", moviesController.getMoviesForHeroSlider);
-router.post("/movies/details/:id", moviesController.getMovieDetails);
 module.exports = router;

@@ -369,11 +369,11 @@ const selectShowtime = (theater, showtime) => {
 
 const getMovieDetails = async () => {
     try {
-        const response = await api.post(`/movies/details/${movieId}`)
+        const response = await api.get(`/movies/details/${movieId}`)
         movieDetails.value = response.data.getMovieDetails
         showDetails.value = response.data.showTimingAndDetails
     } catch (error) {
-        console.log(error)
+        console.error('Error fetching movie details:', error)
     }
 }
 

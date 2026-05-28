@@ -1,6 +1,6 @@
 const pool = require("../services/dbService");
 
-const bookingModal = {
+const bookingModel = {
   /**
    * Get seat map for a specific show
    * Returns all seats with their current status (available/locked/booked)
@@ -19,7 +19,7 @@ const bookingModal = {
          JOIN screens sc ON s.screen_id = sc.id
          JOIN theatres t ON sc.theatre_id = t.id
          WHERE s.id = ?`,
-        [showId]
+        [showId],
       );
 
       if (showRows.length === 0) {
@@ -57,13 +57,13 @@ const bookingModal = {
           )
         WHERE st.screen_id = ? AND st.is_active = 1
         ORDER BY st.row_label, st.col_index`,
-        [showId, showId, showId, show.screen_id]
+        [showId, showId, showId, show.screen_id],
       );
 
       // Get pricing info
       const [pricing] = await connection.query(
         `SELECT seat_class, price FROM show_seat_prices WHERE show_id = ?`,
-        [showId]
+        [showId],
       );
 
       return {
@@ -106,14 +106,6 @@ const bookingModal = {
       const lockedSeats = [];
       const failedSeats = [];
 
-      console.log("Attempting to lock seats:", {
-        showId,
-        seatIds,
-        sessionId,
-        userId,
-        expiresAt,
-      });
-
       for (const seatId of seatIds) {
         try {
           // Check if seat is already booked
@@ -122,7 +114,7 @@ const bookingModal = {
              JOIN bookings b ON bi.booking_id = b.id
              WHERE b.show_id = ? AND bi.seat_id = ? 
              AND b.status IN ('confirmed', 'pending')`,
-            [showId, seatId]
+            [showId, seatId],
           );
 
           if (booked.length > 0) {
@@ -131,26 +123,22 @@ const bookingModal = {
           }
 
           // Try to insert lock (will fail if already locked due to unique constraint)
-          const [insertResult] = await connection.query(
+          await connection.query(
             `INSERT INTO seat_locks (show_id, seat_id, session_id, user_id, expires_at)
              VALUES (?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                session_id = IF(expires_at < NOW(), VALUES(session_id), session_id),
                user_id = IF(expires_at < NOW(), VALUES(user_id), user_id),
                expires_at = IF(expires_at < NOW(), VALUES(expires_at), expires_at)`,
-            [showId, seatId, sessionId, userId, expiresAt]
+            [showId, seatId, sessionId, userId, expiresAt],
           );
-
-          console.log("Insert result for seat", seatId, ":", insertResult);
 
           // Verify the lock belongs to this session
           const [lockCheck] = await connection.query(
             `SELECT id FROM seat_locks 
              WHERE show_id = ? AND seat_id = ? AND session_id = ?`,
-            [showId, seatId, sessionId]
+            [showId, seatId, sessionId],
           );
-
-          console.log("Lock check for seat", seatId, ":", lockCheck);
 
           if (lockCheck.length > 0) {
             lockedSeats.push(seatId);
@@ -164,8 +152,6 @@ const bookingModal = {
       }
 
       await connection.commit();
-
-      console.log("Lock result:", { lockedSeats, failedSeats, expiresAt });
 
       return {
         success: lockedSeats.length > 0,
@@ -182,14 +168,20 @@ const bookingModal = {
   },
 
   /**
-   * Release locked seats for a session
+   * Release locked seats for a session.
+   * userId ensures a user can only release their own locks.
    */
-  releaseSeats: async (showId, seatIds, sessionId) => {
-    const [result] = await pool.query(
-      `DELETE FROM seat_locks 
-       WHERE show_id = ? AND seat_id IN (?) AND session_id = ?`,
-      [showId, seatIds, sessionId]
-    );
+  releaseSeats: async (showId, seatIds, sessionId, userId = null) => {
+    let sql = `DELETE FROM seat_locks
+       WHERE show_id = ? AND seat_id IN (?) AND session_id = ?`;
+    const params = [showId, seatIds, sessionId];
+
+    if (userId) {
+      sql += ` AND user_id = ?`;
+      params.push(userId);
+    }
+
+    const [result] = await pool.query(sql, params);
 
     return {
       success: true,
@@ -201,7 +193,6 @@ const bookingModal = {
    * Get user's current locks for a show
    */
   getUserLocks: async (showId, sessionId) => {
-    // Clean up expired locks first
     await pool.query("DELETE FROM seat_locks WHERE expires_at < NOW()");
 
     const [locks] = await pool.query(
@@ -209,7 +200,7 @@ const bookingModal = {
        FROM seat_locks sl
        JOIN seats st ON sl.seat_id = st.id
        WHERE sl.show_id = ? AND sl.session_id = ? AND sl.expires_at > NOW()`,
-      [showId, sessionId]
+      [showId, sessionId],
     );
 
     return locks;
@@ -217,7 +208,8 @@ const bookingModal = {
 
   /**
    * Confirm booking (transaction-safe)
-   * Creates booking, booking_items, and removes locks atomically
+   * Creates booking, booking_items, and removes locks atomically.
+   * Total is always recalculated from DB — never trusted from client.
    */
   confirmBooking: async (
     showId,
@@ -225,40 +217,24 @@ const bookingModal = {
     sessionId,
     userId,
     totalAmount,
-    theatreId
+    theatreId,
   ) => {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
 
       // 1. Verify locks are still valid and belong to this session
-      console.log("Confirming booking with:", {
-        showId,
-        seatIds,
-        sessionId,
-        userId,
-      });
-
       const [locks] = await connection.query(
         `SELECT seat_id FROM seat_locks 
          WHERE show_id = ? AND seat_id IN (?) AND session_id = ? AND expires_at > NOW()
          FOR UPDATE`,
-        [showId, seatIds, sessionId]
+        [showId, seatIds, sessionId],
       );
-
-      console.log("Found locks:", locks.length, "Expected:", seatIds.length);
-
-      // Debug: Check all locks for this show
-      const [allLocks] = await connection.query(
-        `SELECT * FROM seat_locks WHERE show_id = ? AND seat_id IN (?)`,
-        [showId, seatIds]
-      );
-      console.log("All locks for these seats:", allLocks);
 
       if (locks.length !== seatIds.length) {
         await connection.rollback();
         throw new Error(
-          `Some seats are no longer locked or have expired. Found ${locks.length} of ${seatIds.length} seats locked.`
+          `Some seats are no longer locked or have expired. Found ${locks.length} of ${seatIds.length} seats locked.`,
         );
       }
 
@@ -268,32 +244,38 @@ const bookingModal = {
          JOIN bookings b ON bi.booking_id = b.id
          WHERE b.show_id = ? AND bi.seat_id IN (?) 
          AND b.status IN ('confirmed', 'pending')`,
-        [showId, seatIds]
+        [showId, seatIds],
       );
 
       if (alreadyBooked.length > 0) {
         throw new Error("Some seats have already been booked");
       }
 
-      // 3. Create booking
-      const [bookingResult] = await connection.query(
-        `INSERT INTO bookings (user_id, show_id, theatre_id, total_amount, status, booked_at)
-         VALUES (?, ?, ?, ?, 'confirmed', NOW())`,
-        [userId, showId, theatreId, totalAmount]
-      );
-
-      const bookingId = bookingResult.insertId;
-
-      // 4. Get seat details for booking items
+      // 3. Get seat details BEFORE creating booking
       const [seatDetails] = await connection.query(
         `SELECT st.id, st.seat_label, st.seat_class, ssp.price
          FROM seats st
          JOIN show_seat_prices ssp ON ssp.seat_class = st.seat_class AND ssp.show_id = ?
          WHERE st.id IN (?)`,
-        [showId, seatIds]
+        [showId, seatIds],
       );
 
-      // 5. Create booking items
+      // 4. Recalculate total from DB — never trust client-supplied amount
+      const calculatedTotal = seatDetails.reduce(
+        (sum, seat) => sum + parseFloat(seat.price),
+        0,
+      );
+
+      // 5. Create booking
+      const [bookingResult] = await connection.query(
+        `INSERT INTO bookings (user_id, show_id, theatre_id, total_amount, status, booked_at)
+         VALUES (?, ?, ?, ?, 'confirmed', NOW())`,
+        [userId, showId, theatreId, calculatedTotal],
+      );
+
+      const bookingId = bookingResult.insertId;
+
+      // 6. Create booking items
       const bookingItemsValues = seatDetails.map((seat) => [
         bookingId,
         seat.id,
@@ -306,13 +288,13 @@ const bookingModal = {
       await connection.query(
         `INSERT INTO booking_items (booking_id, seat_id, seat_label, seat_class, price, status)
          VALUES ?`,
-        [bookingItemsValues]
+        [bookingItemsValues],
       );
 
-      // 6. Delete locks
+      // 7. Delete locks
       await connection.query(
         `DELETE FROM seat_locks WHERE show_id = ? AND seat_id IN (?)`,
-        [showId, seatIds]
+        [showId, seatIds],
       );
 
       await connection.commit();
@@ -320,6 +302,7 @@ const bookingModal = {
       return {
         success: true,
         bookingId,
+        totalAmount: calculatedTotal,
         seats: seatDetails,
       };
     } catch (error) {
@@ -341,17 +324,16 @@ const bookingModal = {
        JOIN movies m ON s.movie_id = m.id
        JOIN theatres t ON b.theatre_id = t.id
        WHERE b.id = ?`,
-      [bookingId]
+      [bookingId],
     );
 
     if (rows.length === 0) return null;
 
     const booking = rows[0];
 
-    // Get items
     const [items] = await pool.query(
       "SELECT * FROM booking_items WHERE booking_id = ?",
-      [bookingId]
+      [bookingId],
     );
 
     booking.items = items;
@@ -359,7 +341,8 @@ const bookingModal = {
   },
 
   /**
-   * Get all bookings for a user
+   * Get all bookings for a user.
+   * Uses a single batch IN (?) query instead of N+1 loop.
    */
   getUserBookings: async (userId) => {
     const [bookings] = await pool.query(
@@ -382,19 +365,44 @@ const bookingModal = {
        JOIN theatres t ON b.theatre_id = t.id
        WHERE b.user_id = ?
        ORDER BY b.booked_at DESC`,
-      [userId]
+      [userId],
     );
 
-    // Get booking items (seats) for each booking
-    for (const booking of bookings) {
-      const [items] = await pool.query(
-        "SELECT seat_label, seat_class, price FROM booking_items WHERE booking_id = ?",
-        [booking.id]
-      );
-      booking.items = items;
-    }
+    if (bookings.length === 0) return bookings;
+
+    const bookingIds = bookings.map((b) => b.id);
+    const [allItems] = await pool.query(
+      `SELECT booking_id, seat_label, seat_class, price
+       FROM booking_items
+       WHERE booking_id IN (?)`,
+      [bookingIds],
+    );
+
+    const itemsByBooking = allItems.reduce((acc, item) => {
+      if (!acc[item.booking_id]) acc[item.booking_id] = [];
+      acc[item.booking_id].push(item);
+      return acc;
+    }, {});
+
+    bookings.forEach((booking) => {
+      booking.items = itemsByBooking[booking.id] || [];
+    });
 
     return bookings;
+  },
+
+  /**
+   * Get the server-authoritative total price for a set of seats in a show.
+   */
+  getSeatsPrice: async (showId, seatIds) => {
+    const [rows] = await pool.query(
+      `SELECT SUM(ssp.price) AS total
+       FROM seats st
+       JOIN show_seat_prices ssp ON ssp.seat_class = st.seat_class AND ssp.show_id = ?
+       WHERE st.id IN (?)`,
+      [showId, seatIds],
+    );
+    return parseFloat(rows[0]?.total || 0);
   },
 
   /**
@@ -402,7 +410,7 @@ const bookingModal = {
    */
   cleanupExpiredLocks: async () => {
     const [result] = await pool.query(
-      "DELETE FROM seat_locks WHERE expires_at < NOW()"
+      "DELETE FROM seat_locks WHERE expires_at < NOW()",
     );
 
     return {
@@ -412,4 +420,4 @@ const bookingModal = {
   },
 };
 
-module.exports = bookingModal;
+module.exports = bookingModel;

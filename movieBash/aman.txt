@@ -1,0 +1,2 @@
+# DEPRECATED — This scratch file should be deleted from the repository.
+# Run: git rm aman.txt

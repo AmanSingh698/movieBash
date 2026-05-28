@@ -2,25 +2,32 @@ const express = require("express");
 const router = express.Router();
 const bookingController = require("../controllers/bookingController");
 const authenticateJWT = require("../middlewares/authMiddleware");
+const requireAdminKey = require("../middlewares/adminMiddleware");
 
-// Public route - Get seat map (no auth required to view)
+// Public route — anyone can view the seat map
 router.get("/seat-map/:showId", bookingController.getSeatMap);
 
-// Protected routes - Require authentication
+// Fix #6: releaseSeats now requires authentication.
+// Prevents a third party from releasing another user's locked seats.
+router.post("/release-seats", authenticateJWT, bookingController.releaseSeats);
+
+// Protected routes
 router.post("/lock-seats", authenticateJWT, bookingController.lockSeats);
-router.post("/release-seats", bookingController.releaseSeats); // Can be called without auth for cleanup
-router.get("/my-locks/:showId", bookingController.getUserLocks);
 router.post("/confirm", authenticateJWT, bookingController.confirmBooking);
 
-// Admin/Cron route - Cleanup expired locks
-router.delete("/cleanup-expired", bookingController.cleanupExpiredLocks);
+// Fix #14 (route ordering bug): /user/history MUST come before /:id,
+// otherwise Express catches it as { id: "user" } and the handler is never reached.
+router.get("/user/history", authenticateJWT, bookingController.getUserBookings);
 
-// Get booking details (protected or public depending on requirement, keeping public for confirmation page for now, or use auth)
-// Better to require auth if user is logged in. But for now let's keep it simple or use auth if available.
-// Since confirmation page is shown to the user who booked, they should be logged in.
+// Get booking details by ID
 router.get("/:id", authenticateJWT, bookingController.getBookingDetails);
 
-// Get user's booking history
-router.get("/user/history", authenticateJWT, bookingController.getUserBookings);
+// Fix #5: Cleanup expired locks is now protected by an admin secret key.
+// Pass the key as the X-Admin-Key header (safe to call from cron jobs / CI).
+router.delete(
+  "/cleanup-expired",
+  requireAdminKey,
+  bookingController.cleanupExpiredLocks
+);
 
 module.exports = router;

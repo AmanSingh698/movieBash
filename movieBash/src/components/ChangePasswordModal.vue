@@ -72,9 +72,6 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import api from '@/utils/axiosConfig'
-import { useStore } from 'vuex'
-
-const store = useStore()
 const emit = defineEmits(['close'])
 
 const showNewPassword = ref(false)

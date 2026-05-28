@@ -96,12 +96,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/utils/axiosConfig'
-import { useStore } from 'vuex'
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
 import { useAuthStore } from '@/store/modules/auth'
 
-const store = useStore()
 const authStore = useAuthStore()
 const emit = defineEmits(['close'])
 
