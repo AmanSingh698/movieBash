@@ -56,9 +56,13 @@
                     <div class="seat-icon seat-available-icon"></div>
                     <span>Available</span>
                 </div>
-                <div class="legend-item">
-                    <div class="seat-icon seat-selected-icon"></div>
-                    <span>Selected</span>
+                <div class="legend-item" title="Premium Tiers">
+                    <div class="seat-icon seat-premium-icon"></div>
+                    <span>Premium</span>
+                </div>
+                <div class="legend-item" title="Classic Tiers">
+                    <div class="seat-icon seat-classic-icon"></div>
+                    <span>Classic</span>
                 </div>
                 <div class="legend-item">
                     <div class="seat-icon seat-sold-icon"></div>
@@ -291,13 +295,25 @@ onUnmounted(() => {
 }
 
 .screen-shape {
-    width: 280px;
-    height: 40px;
-    background: linear-gradient(to bottom, #e0f2fe, rgba(224, 242, 254, 0));
-    transform: perspective(100px) rotateX(-10deg);
-    box-shadow: 0 -10px 20px -5px rgba(56, 189, 248, 0.1);
-    border-top: 4px solid #bae6fd;
-    opacity: 0.8;
+    width: 320px;
+    height: 45px;
+    background: linear-gradient(to bottom, rgba(56, 189, 248, 0.9), rgba(56, 189, 248, 0));
+    transform: perspective(150px) rotateX(-12deg);
+    box-shadow: 0 -15px 40px -5px rgba(56, 189, 248, 0.6), 0 0 20px rgba(56, 189, 248, 0.4);
+    border-top: 5px solid #38bdf8;
+    border-radius: 4px 4px 0 0;
+    opacity: 0.9;
+    animation: pulseScreen 3s infinite alternate;
+}
+
+@keyframes pulseScreen {
+    0% {
+        box-shadow: 0 -15px 40px -5px rgba(56, 189, 248, 0.5), 0 0 20px rgba(56, 189, 248, 0.3);
+    }
+
+    100% {
+        box-shadow: 0 -20px 50px -5px rgba(56, 189, 248, 0.8), 0 0 30px rgba(56, 189, 248, 0.6);
+    }
 }
 
 .screen-label {
@@ -336,19 +352,27 @@ onUnmounted(() => {
     background: #fff;
 }
 
-.seat-available-icon {
-    border-color: #10b981;
-    background: #fff;
+.seat-premium-icon {
+    background: linear-gradient(135deg, #f59e0b, #ec4899);
+    border: none;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+}
+
+.seat-classic-icon {
+    background: linear-gradient(135deg, #10b981, #3b82f6);
+    border: none;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
 }
 
 .seat-selected-icon {
-    border-color: #10b981;
-    background: #10b981;
+    background: linear-gradient(135deg, #a855f7, #6366f1);
+    border: none;
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
 }
 
 .seat-sold-icon {
-    border-color: #e2e8f0;
-    background: #e2e8f0;
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 /* Seats Container */
@@ -419,62 +443,87 @@ onUnmounted(() => {
 
 /* Seat Styles */
 .seat {
-    width: 28px;
-    height: 28px;
-    border: 1px solid #e2e8f0;
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     /* Default border */
-    background: #fff;
-    border-radius: 2px;
-    /* Square with slight radius */
-    font-size: 10px;
-    font-weight: 500;
-    color: #64748b;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-primary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.seat::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.seat:not(:disabled):hover::before {
+    opacity: 1;
 }
 
 .seat:disabled {
     cursor: not-allowed;
 }
 
-/* Colors for Seat Tiers - All Available seats are Green */
-.seat-gold,
-.seat-premium,
+/* Base Tier Types (Unselected Available) */
 .seat-imax,
-.seat-platinum,
-.seat-silver,
-.seat-classic {
-    border-color: #10b981;
-    color: #10b981;
+.seat-platinum {
+    background: rgba(236, 72, 153, 0.15);
+    border-color: rgba(236, 72, 153, 0.4);
+    color: #fbcfe8;
 }
 
-/* Selected State - Overrides class colors */
+.seat-gold,
+.seat-premium {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #fde68a;
+}
+
+.seat-silver,
+.seat-classic {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #a7f3d0;
+}
+
+/* Selected State - Vibrant Gradient & Pop */
 .seat-selected {
-    background: #10b981 !important;
-    /* Force green fill */
-    border-color: #10b981 !important;
+    background: linear-gradient(135deg, #a855f7, #6366f1) !important;
+    border-color: transparent !important;
     color: white !important;
-    box-shadow: none;
-    transform: none;
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
+    transform: scale(1.15) !important;
+    z-index: 2;
 }
 
 /* Booked/Sold State */
 .seat-booked {
-    background: #e2e8f0 !important;
-    border-color: #e2e8f0 !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
     color: transparent !important;
-    /* Hide number */
+    box-shadow: none !important;
     cursor: not-allowed;
 }
 
 /* Locked State (treated as Sold for others) */
 .seat-locked {
-    background: #e2e8f0 !important;
-    border-color: #e2e8f0 !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
     color: transparent !important;
     cursor: not-allowed;
 }
@@ -485,9 +534,10 @@ onUnmounted(() => {
 }
 
 /* Hover Effects */
-.seat-available:not(:disabled):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+.seat:not(:disabled):hover {
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1;
 }
 
 .pricing-info {

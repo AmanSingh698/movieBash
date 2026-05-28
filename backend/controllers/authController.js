@@ -12,7 +12,7 @@ const { OAuth2Client } = require("google-auth-library");
 const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  "postmessage"
+  "postmessage",
 );
 
 // parse a TTL string like '7d' '15m' to seconds
@@ -64,7 +64,7 @@ function refreshCookieOptions(ttlSeconds) {
     secure: isProd, // in production, ensure https
     sameSite: "lax", // adjust to 'strict' if needed
     maxAge: ttlSeconds * 1000,
-    path: "/api/auth/refresh", // restrict cookie to refresh endpoint
+    path: "/api/auth", // restrict cookie to auth endpoints (including logout)
   };
 }
 
@@ -108,7 +108,7 @@ const userAuthController = {
           user.id,
           ttl,
           req.headers["user-agent"],
-          req.ip
+          req.ip,
         );
 
         // Set refresh token cookie
@@ -161,7 +161,7 @@ const userAuthController = {
         newUser.id,
         ttl,
         req.headers["user-agent"],
-        req.ip
+        req.ip,
       );
 
       res.cookie("refreshToken", refreshToken, refreshCookieOptions(ttl));
@@ -244,7 +244,7 @@ const userAuthController = {
         user.id,
         ttl,
         req.headers["user-agent"],
-        req.ip
+        req.ip,
       );
 
       res.cookie("refreshToken", refreshToken, refreshCookieOptions(ttl));
@@ -302,7 +302,7 @@ const userAuthController = {
       const newJti = uuidv4();
       const newRefreshToken = createRefreshToken(user, newJti);
       const ttl = expiryToSeconds(
-        process.env.REFRESH_TOKEN_EXPIRES_IN || REFRESH_EXPIRES
+        process.env.REFRESH_TOKEN_EXPIRES_IN || REFRESH_EXPIRES,
       );
       await RefreshModel.storeToken(newJti, userId, ttl);
 
@@ -332,7 +332,13 @@ const userAuthController = {
       }
 
       // clear cookie
-      res.clearCookie("refreshToken", { path: "/api/auth/refresh" });
+      const isProd = process.env.NODE_ENV === "production";
+      res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: "lax",
+        path: "/api/auth",
+      });
       res.json({ message: "Logged out" });
     } catch (err) {
       next(err);
@@ -349,7 +355,7 @@ const userAuthController = {
       process.env.JWT_SECRET,
       {
         expiresIn: "1d",
-      }
+      },
     );
     return token;
   },

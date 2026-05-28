@@ -126,8 +126,8 @@ api.interceptors.response.use(
 
       // clear localStorage keys used by auth (safe-guard)
       try {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('auth_user')
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('user')
       } catch (e) {
         // ignore
       }

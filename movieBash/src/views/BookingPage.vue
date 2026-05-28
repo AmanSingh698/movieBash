@@ -1,6 +1,12 @@
 <template>
     <div class="booking-page" v-if="bookingSummary.movie">
-        <div class="container">
+        <!-- Dynamic Background -->
+        <div class="booking-bg"
+            :style="{ backgroundImage: `url(${bookingSummary.movie.poster_url || bookingSummary.movie.poster})` }">
+        </div>
+        <div class="booking-overlay"></div>
+
+        <div class="container relative-content">
             <div class="booking-layout">
                 <!-- Main Content -->
                 <div class="booking-main">
@@ -16,7 +22,7 @@
                         <h1 class="page-title">Select Seats</h1>
                     </div>
 
-                    <div class="movie-info-bar glass">
+                    <div class="movie-info-bar premium-glass animate-slide-up">
                         <div class="movie-info-content">
                             <img :src="bookingSummary.movie.poster_url || bookingSummary.movie.poster"
                                 :alt="bookingSummary.movie.title" class="movie-poster-small" />
@@ -37,7 +43,7 @@
 
                 <!-- Sidebar Summary -->
                 <div class="booking-sidebar">
-                    <div class="summary-card glass-strong">
+                    <div class="summary-card premium-glass animate-slide-up" style="animation-delay: 0.1s;">
                         <h3 class="summary-title">Booking Summary</h3>
 
                         <div class="summary-section">
@@ -235,6 +241,57 @@ onMounted(async () => {
 .booking-page {
     min-height: 100vh;
     padding: var(--spacing-2xl) 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.booking-bg {
+    position: absolute;
+    top: -5%;
+    left: -5%;
+    width: 110%;
+    height: 110%;
+    background-size: cover;
+    background-position: center;
+    filter: blur(80px) brightness(0.3) saturate(1.5);
+    z-index: 0;
+    opacity: 0.8;
+}
+
+.booking-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.95) 100%);
+    z-index: 1;
+}
+
+.relative-content {
+    position: relative;
+    z-index: 2;
+}
+
+.premium-glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.animate-slide-up {
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .booking-layout {
@@ -265,6 +322,12 @@ onMounted(async () => {
 .movie-info-bar {
     padding: var(--spacing-lg);
     border-radius: var(--radius-xl);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.movie-info-bar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px -10px rgba(168, 85, 247, 0.4);
 }
 
 .movie-info-content {
@@ -274,10 +337,16 @@ onMounted(async () => {
 }
 
 .movie-poster-small {
-    width: 80px;
-    height: 120px;
+    width: 90px;
+    height: 135px;
     object-fit: cover;
     border-radius: var(--radius-md);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.movie-poster-small:hover {
+    transform: scale(1.05) rotate(-2deg);
 }
 
 .movie-details-small h3 {
@@ -368,6 +437,7 @@ onMounted(async () => {
 .total-price .summary-value {
     font-size: var(--font-size-2xl);
     font-weight: 800;
+    text-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
 }
 
 .selected-seats-list {
@@ -383,6 +453,20 @@ onMounted(async () => {
     border-radius: var(--radius-md);
     font-size: var(--font-size-xs);
     font-weight: 600;
+    box-shadow: 0 4px 10px -2px rgba(168, 85, 247, 0.4);
+    animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .booking-note {
